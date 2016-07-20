@@ -1,0 +1,13 @@
+# encoding: utf-8
+
+bld.program(
+    features='cxx',
+    source=['file_segment_reassemble.cpp'],
+    target='file_segment_reassemble',
+    use=['chunkie'])
+
+bld.program(
+    features='cxx',
+    source=['message_segment_reassemble.cpp'],
+    target='message_segment_reassemble',
+    use=['chunkie'])

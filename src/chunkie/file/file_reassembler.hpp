@@ -1,0 +1,78 @@
+// Copyright (c) Steinwurf ApS 2016.
+// All Rights Reserved
+//
+// Distributed under the "BSD License". See the accompanying LICENSE.rst file.
+
+#pragma once
+
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <boost/filesystem.hpp>
+
+
+namespace chunkie
+{
+
+    /// Reassembles a file previously cut into chunks by the file_segmenter
+    class file_reassembler
+    {
+    public:
+
+        file_reassembler(boost::filesystem::path base_dir
+        = boost::filesystem::current_path()) :
+            m_path(base_dir)
+        { }
+
+        ~file_reassembler()
+        {
+            if (m_file.is_open())
+            {
+                m_file.close();
+            }
+        }
+
+        // Save data to a file
+        // @param filedata a vector reference with file data incl. headers
+        // to reconstruct file
+        void save(const std::vector<uint8_t>& filedata);
+
+        // Return true if no more data available
+        bool end_of_file() const
+        {
+            return m_total_size == m_offset;
+        }
+
+        uint64_t offset()
+        {
+            return m_offset;
+        }
+
+        uint64_t size()
+        {
+            return m_total_size;
+        }
+
+        const std::string& name()
+        {
+            return m_filename;
+        }
+
+    private:
+
+        // Path and file
+        boost::filesystem::path m_path;
+        std::ofstream m_file;
+        std::string m_filename;
+
+        // Size and offset
+        uint64_t m_total_size = 0;
+        uint64_t m_offset = 0;
+
+        bool initiated = false;
+
+        // Header
+        uint16_t m_filename_length;
+    };
+}

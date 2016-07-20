@@ -1,0 +1,7 @@
+# encoding: utf-8
+
+bld.program(
+    features='cxx test',
+    source=['chunkie_tests.cpp'] + bld.path.ant_glob('src/*.cpp'),
+    target='chunkie_tests',
+    use=['chunkie', 'gtest'])
