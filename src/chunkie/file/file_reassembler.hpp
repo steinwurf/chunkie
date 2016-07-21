@@ -1,7 +1,9 @@
-// Copyright (c) Steinwurf ApS 2016.
+// Copyright (c) 2015 Steinwurf ApS
 // All Rights Reserved
 //
-// Distributed under the "BSD License". See the accompanying LICENSE.rst file.
+// THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE OF STEINWURF
+// The copyright notice above does not evidence any
+// actual or intended publication of such source code.
 
 #pragma once
 
