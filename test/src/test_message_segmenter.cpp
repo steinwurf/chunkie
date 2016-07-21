@@ -5,15 +5,11 @@
 // The copyright notice above does not evidence any
 // actual or intended publication of such source code.
 
-#include <cstdint>
-#include <ctime>
-
 #include <gtest/gtest.h>
 
-GTEST_API_ int main(int argc, char **argv)
-{
-    srand(static_cast<uint32_t>(time(0)));
+#include <chunkie/message/message_segmenter.hpp>
 
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+TEST(test_message_segmenter, segment)
+{
+
 }
