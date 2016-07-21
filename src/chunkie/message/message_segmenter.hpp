@@ -138,6 +138,8 @@ namespace chunkie
 
     public:
 
+        static const HeaderType min_message_size = sizeof(HeaderType) + 1;
+
         static const HeaderType max_message_size =
             std::numeric_limits<HeaderType>::max() / 2;
 
@@ -264,7 +266,7 @@ namespace chunkie
                 start = false;
                 message.erase(message.begin(), message.begin() + bytes);
 
-                if (writer.remaining_size() < sizeof(HeaderType))
+                if (writer.remaining_size() <= sizeof(HeaderType))
                     break;
             }
         }
