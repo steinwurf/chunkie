@@ -8,12 +8,11 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
 #include <iostream>
 #include <random>
 #include <sstream>
-
-// #include <stub/call.hpp>
 
 #include <chunkie/checksum/checksum.hpp>
 
@@ -28,6 +27,15 @@ public:
 
     virtual void SetUp()
     {
+        auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+
+        m_timestamp_id = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            now).count();
+
+        std::stringstream convert_id;
+        convert_id << "testfile" << "_" << m_timestamp_id << ".tmp";
+        m_filename_in = convert_id.str();
+
         // Create a file with random contents in current directory.
         // Make sure it doesnt exists already.
         uint64_t test_file_size = 1000000; // 1 MB file size
@@ -90,7 +98,9 @@ protected:
 
     boost::filesystem::path m_path = boost::filesystem::current_path();
 
-    std::string m_filename_in = "testfile.tmp";
+    uint64_t m_timestamp_id;
+        
+    std::string m_filename_in = "not_specified_yet";
     std::string m_filename_out = "not_specified_yet";
 };
 
@@ -108,7 +118,6 @@ TEST_F(test_file_segment_reassemble, run)
 
         EXPECT_GE(max_segment_size, buffer.size())
                 << "Segments must not be larger than specified size";
-        std::cout << "buffer save" << std::endl;
         ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
         fr.save(buffer);
     }
