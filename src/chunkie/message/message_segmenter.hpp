@@ -193,14 +193,14 @@ namespace chunkie
                    "Attempting to getting segment when none is available. "
                    "Always use segment_available() before fetching segment.");
 
-            std::vector<uint8_t> segment(0);
+            std::vector<uint8_t> segment(segment_size);
 
             if (!segment_available(segment_size))
             {
+                segment.clear();
                 return segment;
             }
 
-            segment.resize(segment_size, 0);
             
             write_segment(segment);
 

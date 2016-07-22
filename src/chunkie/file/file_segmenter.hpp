@@ -24,7 +24,7 @@ namespace chunkie
     public:
 
         file_segmenter(boost::filesystem::path path,
-        uint32_t max_segment_size = 10e6) :
+        uint32_t max_segment_size = 1e5) :
             m_path(path),
             m_file(path.c_str(), std::ios::binary | std::ios::in),
             m_filename(m_path.filename().string()),
