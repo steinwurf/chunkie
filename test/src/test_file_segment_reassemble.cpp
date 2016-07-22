@@ -86,32 +86,6 @@ public:
             << "Test file " << m_filename_out << " not found. Not removed.";
     }
 
-    virtual void run()
-    {
-        uint32_t max_segment_size = 10240; // load 10kiB at a time
-
-        chunkie::file_segmenter fs(m_path / m_filename_in, max_segment_size);
-        chunkie::file_reassembler fr(m_path);
-
-        while (!fs.end_of_file())
-        {
-            std::vector<uint8_t> buffer = fs.load();
-
-            EXPECT_GE(max_segment_size, buffer.size())
-                << "Segments must not be larger than specified size";
-            ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
-            fr.save(buffer);
-        }
-
-        EXPECT_TRUE(fr.end_of_file())
-            << "Reassembler should finish when segmenter is done";
-
-        EXPECT_EQ(fr.size(), fs.size())
-            << "The two files must be the same size";
-
-        m_filename_out = fr.name();
-    }
-
 protected:
 
     boost::filesystem::path m_path = boost::filesystem::current_path();
@@ -123,5 +97,27 @@ protected:
 
 TEST_F(test_file_segment_reassemble, run)
 {
-    this->run();
+    uint32_t max_segment_size = 10240; // load 10kiB at a time
+
+    chunkie::file_segmenter fs(m_path / m_filename_in, max_segment_size);
+    chunkie::file_reassembler fr(m_path);
+
+    while (!fs.end_of_file())
+    {
+        std::vector<uint8_t> buffer = fs.load();
+
+        EXPECT_GE(max_segment_size, buffer.size())
+                << "Segments must not be larger than specified size";
+        std::cout << "buffer save" << std::endl;
+        ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
+        fr.save(buffer);
+    }
+
+    EXPECT_TRUE(fr.end_of_file())
+            << "Reassembler should finish when segmenter is done";
+
+    EXPECT_EQ(fr.size(), fs.size())
+            << "The two files must be the same size";
+
+    m_filename_out = fr.name();
 }
