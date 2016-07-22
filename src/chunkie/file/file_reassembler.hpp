@@ -58,23 +58,25 @@ namespace chunkie
 
         const std::string& name()
         {
-            return m_filename;
+            return m_filename.string();
         }
+
+    private:
+
+        void initiate(boost::filesystem::path filename, 
+                      uint64_t offset, uint64_t total_size);
 
     private:
 
         // Path and file
         boost::filesystem::path m_path;
         std::ofstream m_file;
-        std::string m_filename;
+        boost::filesystem::path m_filename;
 
         // Size and offset
         uint64_t m_total_size = 0;
         uint64_t m_offset = 0;
 
-        bool initiated = false;
-
-        // Header
-        uint16_t m_filename_length;
+        bool m_initiated = false;
     };
 }
