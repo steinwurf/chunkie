@@ -16,7 +16,7 @@ TEST(test_checksum, checksum)
 {
     std::mt19937 engine(0);
 
-    std::uniform_int_distribution<uint8_t> randval(0, 255);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
     std::uniform_int_distribution<uint32_t> randsize(0, 5000);
 
     uint32_t iterations = 1000;
@@ -29,7 +29,7 @@ TEST(test_checksum, checksum)
 
         std::vector<uint8_t> buffer(size);
         for(auto& val : buffer)
-            val = randval(engine);
+            val = (uint8_t)randval(engine);
 
         chunkie::write_checksum(buffer);
 

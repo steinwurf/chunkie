@@ -34,7 +34,7 @@ public:
 
         // random value distribution
         std::mt19937 engine(0);
-        std::uniform_int_distribution<uint8_t> randval(0, 255);
+        std::uniform_int_distribution<uint32_t> randval(0, 255);
 
         // If this file exists already, create a new one
         if(boost::filesystem::exists(m_path / m_filename_in))
@@ -57,7 +57,7 @@ public:
                                  std::ios::binary | std::ios::out);
 
         for (uint32_t i = 0; i < test_file_size; ++i)
-            dummy_file.put(randval(engine));
+            dummy_file.put((uint32_t)randval(engine));
         dummy_file.close();
     }
 
