@@ -77,14 +77,15 @@ public:
 
         EXPECT_EQ(szin, szout) << "in/output files should be same size";
 
-        std::ifstream infile( (m_path / m_filename_in).string() );
-        std::ifstream outfile( (m_path / m_filename_out).string() );
+        {
+            std::ifstream infile((m_path / m_filename_in).string());
+            std::ifstream outfile((m_path / m_filename_out).string());
 
-        uint64_t index = 0;
-        while (!infile.eof())
-            EXPECT_EQ(infile.get(), outfile.get())
-                << "Index " << index << "must be the same";
-
+            uint64_t index = 0;
+            while (!infile.eof())
+                EXPECT_EQ(infile.get(), outfile.get())
+                        << "Index " << index << "must be the same";
+        }
         // Delete the created dummy file
         EXPECT_TRUE(boost::filesystem::remove(m_path / m_filename_in))
             << "Test file " << m_filename_in << " not found. Not removed.";
@@ -109,24 +110,26 @@ TEST_F(test_file_segment_reassemble, run)
 {
     uint32_t max_segment_size = 10240; // load 10kiB at a time
 
-    chunkie::file_segmenter fs(m_path / m_filename_in, max_segment_size);
-    chunkie::file_reassembler fr(m_path);
-
-    while (!fs.end_of_file())
     {
-        std::vector<uint8_t> buffer = fs.load();
+        chunkie::file_segmenter fs(m_path / m_filename_in, max_segment_size);
+        chunkie::file_reassembler fr(m_path);
 
-        EXPECT_GE(max_segment_size, buffer.size())
-                << "Segments must not be larger than specified size";
-        ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
-        fr.save(buffer);
+        while (!fs.end_of_file())
+        {
+            std::vector<uint8_t> buffer = fs.load();
+
+            EXPECT_GE(max_segment_size, buffer.size())
+                    << "Segments must not be larger than specified size";
+            ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
+            fr.save(buffer);
+        }
+
+        EXPECT_TRUE(fr.end_of_file())
+                << "Reassembler should finish when segmenter is done";
+
+        EXPECT_EQ(fr.size(), fs.size())
+                << "The two files must be the same size";
+
+        m_filename_out = fr.name();
     }
-
-    EXPECT_TRUE(fr.end_of_file())
-            << "Reassembler should finish when segmenter is done";
-
-    EXPECT_EQ(fr.size(), fs.size())
-            << "The two files must be the same size";
-
-    m_filename_out = fr.name();
 }
