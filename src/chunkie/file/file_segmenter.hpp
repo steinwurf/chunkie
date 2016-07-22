@@ -29,7 +29,6 @@ namespace chunkie
             m_file(path.c_str(), std::ios::binary | std::ios::in),
             m_filename(m_path.filename().string()),
             m_max_segment_size(max_segment_size),
-            m_segment(max_segment_size),
             m_total_size(boost::filesystem::file_size(path)),
             m_filename_length(m_filename.length()),
             m_header_size(sizeof(m_offset) + sizeof(m_total_size)
@@ -48,7 +47,7 @@ namespace chunkie
         // returns a const vector reference with a chunk of file data incl.
         // headers to reconstruct file. Returned vector data is only valid until
         // next load() is called
-        const std::vector<uint8_t>& load();
+        std::vector<uint8_t> load();
 
         // Return true if no more data available
         bool end_of_file() const
@@ -75,9 +74,7 @@ namespace chunkie
         std::ifstream m_file;
         std::string m_filename;
 
-        // File segment
         const uint32_t m_max_segment_size;
-        std::vector<uint8_t> m_segment;
 
         // Size and offset
         const uint64_t m_total_size = 0;
