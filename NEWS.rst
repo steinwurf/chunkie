@@ -6,4 +6,4 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* File reassembler does not overwrite existing files, but appends a number (e.g ".0") if path already exists.
