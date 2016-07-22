@@ -31,13 +31,13 @@ public:
 
     void run()
     {
-        uint32_t messages = 100;
+        uint32_t messages = 50;
 
         std::mt19937 random_engine(0);
 
         // Make sure we dont create abnormally large messages, max 5000 bytes
         uint32_t max_message_size = std::min((uint64_t)ms.max_message_size,
-                                             (uint64_t) 5000u); 
+                                             (uint64_t) 1000u); 
 
         std::uniform_int_distribution<Type> random_size(ms.min_message_size,
                                                         max_message_size);
