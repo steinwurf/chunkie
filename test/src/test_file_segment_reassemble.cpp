@@ -99,7 +99,7 @@ public:
 
             EXPECT_GE(max_segment_size, buffer.size())
                 << "Segments must not be larger than specified size";
-
+            EXPECT_NE(0u, buffer.size()) << "Segments should be larger than 0";
             fr.save(buffer);
         }
 
