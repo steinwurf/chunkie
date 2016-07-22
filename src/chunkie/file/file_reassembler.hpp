@@ -56,7 +56,7 @@ namespace chunkie
             return m_total_size;
         }
 
-        const std::string& name()
+        std::string name()
         {
             return m_filename.string();
         }

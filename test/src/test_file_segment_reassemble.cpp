@@ -30,7 +30,7 @@ public:
     {
         // Create a file with random contents in current directory.
         // Make sure it doesnt exists already.
-        uint32_t test_file_size = 1e6; // 1 MB file size
+        uint64_t test_file_size = 1000000; // 1 MB file size
 
         // random value distribution
         std::mt19937 engine(0);
