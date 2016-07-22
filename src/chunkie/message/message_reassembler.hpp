@@ -44,13 +44,19 @@ namespace chunkie
             endian::stream_reader<endian::big_endian> reader(segment.data(),
                                                              segment.size());
 
-            while (reader.remaining_size() > sizeof(HeaderType))
+            while (reader.remaining_size() >= sizeof(HeaderType))
             {
                 header hdr;
                 reader.read(hdr.data(), hdr.size());
 
                 const bool start = message_start(hdr);
                 const uint32_t remaining_size = message_size(hdr);
+
+                // If remaining size is zero we have hit a flush-segment
+                if (remaining_size == 0)
+                {
+                    break;
+                }
 
                 // If we get a message start, then the full segment size is
                 // stored and the data should be cleared. It is possible that

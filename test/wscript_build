@@ -4,4 +4,4 @@ bld.program(
     features='cxx test',
     source=['chunkie_tests.cpp'] + bld.path.ant_glob('src/*.cpp'),
     target='chunkie_tests',
-    use=['chunkie', 'gtest'])
+    use=['chunkie', 'gtest', 'stub_includes'])
