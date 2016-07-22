@@ -26,8 +26,10 @@ namespace chunkie
         assert(writer.position() == m_header_size);
 
         // Write data to segment
-        uint32_t bytes = m_file.readsome((char*)writer.remaining_data(),
-        writer.remaining_size());
+        m_file.read((char*)writer.remaining_data(),
+                    writer.remaining_size());
+
+        uint32_t bytes = m_file.gcount();
 
         segment.resize(bytes + m_header_size);
 
