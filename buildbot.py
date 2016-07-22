@@ -5,7 +5,7 @@ import sys
 import json
 import subprocess
 
-project_name = 'score'
+project_name = 'chunkie'
 
 
 def run_command(args):
@@ -56,9 +56,6 @@ def build(properties):
 
 def run_tests(properties):
     command = [sys.executable, 'waf', '-v', '--run_tests']
-
-    if properties.get('mininet'):
-        command += ['--enable_mininet_tests']
 
     run_cmd = None
 
