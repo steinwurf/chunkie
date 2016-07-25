@@ -138,9 +138,9 @@ namespace chunkie
 
     public:
 
-        static const HeaderType min_message_size = sizeof(HeaderType) + 1;
+        static const uint64_t min_message_size = sizeof(HeaderType) + 1;
 
-        static const HeaderType max_message_size =
+        static const uint64_t max_message_size =
             std::numeric_limits<HeaderType>::max() / 2;
 
 
@@ -160,12 +160,14 @@ namespace chunkie
         // param: buffer containing message to write
         void write_message(const std::vector<uint8_t>& message)
         {
+            assert(message.size() >= min_message_size);
             assert(message.size() <= max_message_size);
             queue_item item(true, message);
             m_message_queue.push_back(std::move(item));
         }
         void write_message(std::vector<uint8_t>&& message)
         {
+            assert(message.size() >= min_message_size);
             assert(message.size() <= max_message_size);
             queue_item item(true, message);
             m_message_queue.push_back(std::move(item));
@@ -173,7 +175,7 @@ namespace chunkie
 
         // param: size of segment to write
         // return: true if a segment of size 'segment_size' can be written.
-        bool segment_available(HeaderType segment_size)
+        bool segment_available(uint32_t segment_size)
         {
             uint64_t bytes_available = 0;
 
@@ -187,7 +189,7 @@ namespace chunkie
 
         // param: write a segment of size segment size
         // return: the segment
-        std::vector<uint8_t> get_segment(HeaderType segment_size)
+        std::vector<uint8_t> get_segment(uint32_t segment_size)
         {
             assert(segment_available(segment_size) &&
                    "Attempting to getting segment when none is available. "
@@ -211,14 +213,14 @@ namespace chunkie
         // flush zeropads this partial message to fill a segment
         // of size 'segment_size'. If the remaining message data fills more
         // than a segment size, an assertion is thrown.
-        std::vector<uint8_t> flush(HeaderType segment_size)
+        std::vector<uint8_t> flush(uint32_t segment_size)
         {
             assert(!segment_available(segment_size) &&
                    "Flushing when full segment is available!");
 
             assert(data_buffered() != 0 &&
                    "Flushing when no data is stored internally in segmenter");
-         
+
             std::vector<uint8_t> segment(segment_size, 0);
 
             write_segment(segment);
@@ -228,9 +230,10 @@ namespace chunkie
 
     private:
 
-        header make_header(bool start,
-                                                            HeaderType size)
+        header make_header(bool start, uint32_t size)
         {
+            assert(size >= 1);
+            assert(size <= max_message_size);
             header hdr;
             endian::big_endian::put<HeaderType>(size, hdr.data());
             hdr.front() |= start << 7;

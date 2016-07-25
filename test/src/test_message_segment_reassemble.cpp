@@ -24,25 +24,26 @@ class test_message_segment_reassemble : public TestType
 {
 public:
 
-    virtual uint64_t get_segment_size()
+    virtual uint64_t get_segment_size(uint64_t max_message_size)
     {
-        return ms.max_message_size / 4u;
+        uint64_t size = max_message_size / 4u;
+        return size;
     }
 
     void run()
     {
-        uint32_t messages = 50;
+        uint32_t messages = 100;
 
         std::mt19937 random_engine(0);
 
         // Make sure we dont create abnormally large messages, max 5000 bytes
-        uint32_t max_message_size = std::min((uint64_t)ms.max_message_size,
-                                             (uint64_t) 1000u); 
+        uint64_t max_message_size = std::min((uint64_t)ms.max_message_size,
+                                             (uint64_t) 2500); 
 
-        std::uniform_int_distribution<uint32_t> random_size(ms.min_message_size,
-                                                        max_message_size);
+        std::uniform_int_distribution<uint64_t> random_size(ms.min_message_size,
+                                                            max_message_size);
 
-        uint32_t segment_size = get_segment_size();
+        uint64_t segment_size = get_segment_size(max_message_size);
         SCOPED_TRACE(::testing::Message() << "Using segment size "
                                           << segment_size); 
 
@@ -54,7 +55,7 @@ public:
             ASSERT_LE(index, std::numeric_limits<uint8_t>::max())
                 << "TestError: Index must be able to fit in a uint8_t";
 
-            uint32_t message_size = random_size(random_engine);
+            uint64_t message_size = random_size(random_engine);
 
             SCOPED_TRACE(::testing::Message() << "Message size "
                                               << message_size);
@@ -68,7 +69,7 @@ public:
             message_size_stub(message_size);
         }
 
-        // ASSERT_EQ(messages, message_size_stub.calls());
+        EXPECT_TRUE(ms.segment_available(segment_size));
 
         /// Pull out segments and put them into the reassembler:
         while (ms.segment_available(segment_size))
@@ -128,7 +129,7 @@ class test_message_segment_reassemble_segment_size :
     public test_message_segment_reassemble<::testing::TestWithParam<uint32_t>,
                                             uint32_t>
 {
-    virtual uint64_t get_segment_size()
+    virtual uint64_t get_segment_size(uint64_t /*max_message_size*/)
     {
         return GetParam();
     }
@@ -137,7 +138,8 @@ class test_message_segment_reassemble_segment_size :
 using HeaderTypes = ::testing::Types<
                     uint8_t,
                     uint16_t,
-                    uint32_t
+                    uint32_t,
+                    uint64_t
                     >;
 
 TYPED_TEST_CASE(test_message_segment_reassemble_header_type, HeaderTypes);
