@@ -6,4 +6,11 @@ every change, see the Git log.
 
 Latest
 ------
-* File reassembler does not overwrite existing files, but appends a number (e.g ".0") if path already exists.
+* tdb
+
+1.0.0
+------
+* First stable version.
+* Message segmenting and reassembly
+* File segmenting and reassembly
+* Checksum write and parse

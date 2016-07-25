@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 APPNAME = 'chunkie'
-VERSION = '0.0.0'
+VERSION = '1.0.0'
 
 import waflib.extras.wurf_options
 
@@ -44,7 +44,7 @@ def resolve(ctx):
         ctx.add_dependency(resolve.ResolveVersion(
             name='stub',
             git_repository='github.com/steinwurf/stub.git',
-            major=4))    
+            major=4))
 
 def configure(conf):
 
