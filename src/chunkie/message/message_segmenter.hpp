@@ -138,7 +138,7 @@ namespace chunkie
 
     public:
 
-        static const uint64_t min_message_size = sizeof(HeaderType) + 1;
+        static const uint64_t min_message_size = 1;
 
         static const uint64_t max_message_size =
             std::numeric_limits<HeaderType>::max() / 2;
