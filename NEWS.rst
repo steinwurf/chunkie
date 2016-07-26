@@ -8,6 +8,10 @@ Latest
 ------
 * tdb
 
+1.0.1
+-----
+* Patch: Fixed minimum message size. Messages can now be down to 1 byte.
+
 1.0.0
 ------
 * First stable version.
