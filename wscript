@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 APPNAME = 'chunkie'
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 import waflib.extras.wurf_options
 
