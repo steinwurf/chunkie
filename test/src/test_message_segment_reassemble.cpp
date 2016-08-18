@@ -108,7 +108,8 @@ public:
 
     virtual void verify_messages()
     {
-        for (uint8_t msgno = 0; msgno < segmenter_message_stub.calls(); ++msgno)
+        for (uint32_t msgno = 0; msgno < segmenter_message_stub.calls();
+             ++msgno)
         {
             auto segmenter_arg = segmenter_message_stub.call_arguments(msgno);
             auto segmenter_id = std::get<0>(segmenter_arg);
@@ -241,7 +242,8 @@ class test_message_segment_reassemble_under_loss
     {
         boost::optional<uint8_t> last_reassembled_msgno;
 
-        for (uint32_t index = 0; index < reassembler_message_stub.calls(); ++index)
+        for (uint32_t index = 0; index < reassembler_message_stub.calls();
+             ++index)
         {
             auto reassembler_arg =
                 reassembler_message_stub.call_arguments(index);
