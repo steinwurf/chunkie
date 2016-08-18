@@ -37,7 +37,7 @@ namespace chunkie
         // Segments must be read in-order,
         void read_segment(const std::vector<uint8_t>& segment)
         {
-            uint64_t consumed = 0;
+            std::size_t consumed = 0;
 
             while (consumed < segment.size() - sizeof(HeaderType))
             {
@@ -48,7 +48,7 @@ namespace chunkie
                 consumed += hdr.size();
 
                 const bool start = message_start(hdr);
-                const uint64_t remaining_size = message_size(hdr);
+                const std::size_t remaining_size = message_size(hdr);
 
                 // If remaining size is zero we have hit a flush-segment
                 if (remaining_size == 0)
@@ -75,7 +75,7 @@ namespace chunkie
                 }
 
                 uint32_t bytes = std::min(segment.size() - consumed,
-                                          (std::size_t) remaining_size);
+                                          remaining_size);
 
                 m_message.m_data.insert(m_message.m_data.end(),
                                         segment.begin() + consumed,
