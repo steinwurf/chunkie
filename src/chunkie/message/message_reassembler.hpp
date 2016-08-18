@@ -12,45 +12,43 @@
 #include <deque>
 #include <vector>
 
-#include <endian/stream_reader.hpp>
 #include <endian/big_endian.hpp>
 
 namespace chunkie
 {
-    template<typename HeaderType>
+    template <typename HeaderType>
     class message_reassembler
     {
     public:
-
         using header = std::array<uint8_t, sizeof(HeaderType)>;
 
         using message_queue = std::deque<std::vector<uint8_t>>;
 
         struct message
         {
-            HeaderType m_offset;
-            std::vector<uint8_t> m_data;
+            HeaderType m_size = 0;
+            std::vector<uint8_t> m_data = std::vector<uint8_t>(0);
         };
 
     public:
-
-
         // Read a segment. The buffer MUST start with a segment start,
         // but does not need to be a full segment. If a partial segment is
         // used, the remaining segment MUST be discarded if available.
-        // Segments must be read in-order, 
+        // Segments must be read in-order,
         void read_segment(const std::vector<uint8_t>& segment)
         {
-            endian::stream_reader<endian::big_endian> reader(segment.data(),
-                                                             segment.size());
+            std::size_t consumed = 0;
 
-            while (reader.remaining_size() >= sizeof(HeaderType))
+            while (consumed < segment.size() - sizeof(HeaderType))
             {
                 header hdr;
-                reader.read(hdr.data(), hdr.size());
+                std::copy(segment.begin() + consumed,
+                          segment.begin() + consumed + hdr.size(), hdr.begin());
+
+                consumed += hdr.size();
 
                 const bool start = message_start(hdr);
-                const uint32_t remaining_size = message_size(hdr);
+                const std::size_t remaining_size = message_size(hdr);
 
                 // If remaining size is zero we have hit a flush-segment
                 if (remaining_size == 0)
@@ -63,34 +61,36 @@ namespace chunkie
                 // the previous message was not finished due to packet loss.
                 if (start)
                 {
-                    m_message.m_offset = 0;
-                    m_message.m_data.resize(remaining_size, 0);
+                    m_message.m_size = remaining_size;
+                    m_message.m_data.clear();
+                    m_message.m_data.reserve(remaining_size);
                 }
 
-                // Check if header mismatch
-                if (remaining_size != 
-                        m_message.m_data.size() - m_message.m_offset)
+                if (remaining_size !=
+                    m_message.m_size - m_message.m_data.size())
                 {
-                    m_message.m_offset = 0;
+                    // header mismatch, message lost
+                    m_message.m_size = 0;
                     m_message.m_data.clear();
                 }
 
-                uint32_t bytes = std::min(reader.remaining_size(),
+                uint32_t bytes = std::min(segment.size() - consumed,
                                           remaining_size);
 
-                reader.read(m_message.m_data.data() + m_message.m_offset,
-                            bytes);
+                m_message.m_data.insert(m_message.m_data.end(),
+                                        segment.begin() + consumed,
+                                        segment.begin() + consumed + bytes);
 
-                m_message.m_offset += bytes;
+                consumed += bytes;
 
                 // If message is complete, move to queue
-                if (m_message.m_offset == m_message.m_data.size()
-                    && m_message.m_offset > 0)
+                if (m_message.m_size == m_message.m_data.size() &&
+                    m_message.m_size > 0)
                 {
                     m_message_queue.push_back(std::move(m_message.m_data));
 
-                    m_message.m_data.clear();
-                    m_message.m_offset = 0;
+                    m_message.m_data = std::vector<uint8_t>(0);
+                    m_message.m_size = 0;
                 }
             }
         }
@@ -112,9 +112,7 @@ namespace chunkie
             return msg;
         }
 
-
     private:
-
         bool message_start(header hdr)
         {
             return (hdr.front() >> 7) & 1;
@@ -127,7 +125,6 @@ namespace chunkie
         }
 
     private:
-
         // The current message being reassembled
         message m_message;
 
