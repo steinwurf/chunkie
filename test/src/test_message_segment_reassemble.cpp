@@ -8,21 +8,30 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <limits>
 #include <iostream>
+#include <limits>
 #include <random>
+
+#include <boost/optional.hpp>
 
 #include <stub/call.hpp>
 
-#include <chunkie/message/message_segmenter.hpp>
 #include <chunkie/message/message_reassembler.hpp>
-
+#include <chunkie/message/message_segmenter.hpp>
 
 // Test Base Fixture
 template <typename TestType, typename Type>
 class test_message_segment_reassemble : public TestType
 {
 public:
+    virtual void SetUp()
+    {
+        // Make sure we dont create abnormally large messages, max 5000 bytes
+        m_max_message_size =
+            std::min((uint64_t) ms.max_message_size, (uint64_t) 2500);
+
+        m_segment_size = get_segment_size(m_max_message_size);
+    }
 
     virtual uint64_t get_segment_size(uint64_t max_message_size)
     {
@@ -30,54 +39,46 @@ public:
         return size;
     }
 
-    void run()
+    virtual void write_messages_to_segmenter(uint32_t messages)
     {
-        uint32_t messages = 100;
-
-        std::mt19937 random_engine(0);
-
-        // Make sure we dont create abnormally large messages, max 5000 bytes
-        uint64_t max_message_size = std::min((uint64_t)ms.max_message_size,
-                                             (uint64_t) 2500); 
+        ASSERT_GE(255u, messages);
 
         std::uniform_int_distribution<uint64_t> random_size(ms.min_message_size,
-                                                            max_message_size);
-
-        uint64_t segment_size = get_segment_size(max_message_size);
-        SCOPED_TRACE(::testing::Message() << "Using segment size "
-                                          << segment_size); 
+                                                            m_max_message_size);
 
         /// Write messages to segmenter
         for (uint32_t index = 0; index < messages; ++index)
         {
             SCOPED_TRACE(::testing::Message() << "Running message " << index);
-            
+
             ASSERT_LE(index, std::numeric_limits<uint8_t>::max())
                 << "TestError: Index must be able to fit in a uint8_t";
 
-            uint64_t message_size = random_size(random_engine);
+            uint64_t message_size = random_size(m_random_engine);
 
             SCOPED_TRACE(::testing::Message() << "Message size "
                                               << message_size);
 
             // Create a message of size message size and contents i
             std::vector<uint8_t> message(message_size, uint8_t(index));
+            message.front() = (uint8_t) index;
 
             ms.write_message(message);
 
             // Track the message size
-            message_size_stub(message_size);
+            segmenter_message_stub(index, message_size);
         }
+    }
 
-        EXPECT_TRUE(ms.segment_available(segment_size));
-
+    virtual void read_segments_to_reassembler()
+    {
         /// Pull out segments and put them into the reassembler:
-        while (ms.segment_available(segment_size))
+        while (ms.segment_available(m_segment_size))
         {
-            std::vector<uint8_t> seg = ms.get_segment(segment_size);
+            std::vector<uint8_t> seg = ms.get_segment(m_segment_size);
 
-            EXPECT_EQ(segment_size, seg.size()) << "The segment length must be "
-                                                   "equal to the segment size";
+            EXPECT_EQ(m_segment_size, seg.size())
+                << "The segment length must be equal to the segment size";
             mr.read_segment(seg);
         }
 
@@ -85,49 +86,91 @@ public:
         if (ms.data_buffered() > 0)
         {
             SCOPED_TRACE(::testing::Message() << "Getting flush segment.");
-            std::vector<uint8_t> flush_seg = ms.flush(segment_size);
-            
-            EXPECT_EQ(segment_size, flush_seg.size()) 
+            std::vector<uint8_t> flush_seg = ms.flush(m_segment_size);
+
+            EXPECT_EQ(m_segment_size, flush_seg.size())
                 << "The segment length must be equal to the segment size";
 
             mr.read_segment(flush_seg);
         }
+    }
 
-        uint32_t message_number = 0;
+    virtual void get_messages_from_reassembler()
+    {
+        // uint32_t message_number = 0;
         // Pull reassembled messages from the reassemlber:
         while (mr.message_available())
         {
-            SCOPED_TRACE(::testing::Message() << "Pulling out message no "
-                                              << message_number);
-            
             std::vector<uint8_t> msg = mr.get_message();
-
-            auto arg = message_size_stub.call_arguments(message_number);
-            uint32_t expected_size = std::get<0>(arg);
-
-            ASSERT_EQ(expected_size, msg.size());
-
-            message_number += 1;
+            reassembler_message_stub(msg.front(), msg.size());
         }
     }
 
+    virtual void verify_messages()
+    {
+        for (uint8_t msgno = 0; msgno < segmenter_message_stub.calls(); ++msgno)
+        {
+            auto segmenter_arg = segmenter_message_stub.call_arguments(msgno);
+            auto segmenter_id = std::get<0>(segmenter_arg);
+            auto segmenter_size = std::get<1>(segmenter_arg);
+
+            ASSERT_EQ(msgno, segmenter_id)
+                << "Segmenter message id not sequential";
+
+            auto reassembler_arg =
+                reassembler_message_stub.call_arguments(msgno);
+            auto reassembler_id = std::get<0>(reassembler_arg);
+            auto reassembler_size = std::get<1>(reassembler_arg);
+
+            ASSERT_EQ(msgno, reassembler_id) << "All messages not reassembled";
+
+            ASSERT_EQ(segmenter_size, reassembler_size)
+                << "Reassembled message size not correct";
+        }
+    }
+
+    virtual void run()
+    {
+        uint32_t messages = 100;
+
+        SCOPED_TRACE(::testing::Message() << "Using segment size "
+                                          << m_segment_size);
+
+        write_messages_to_segmenter(messages);
+
+        EXPECT_TRUE(ms.segment_available(m_segment_size));
+
+        read_segments_to_reassembler();
+
+        get_messages_from_reassembler();
+
+        verify_messages();
+    }
+
 protected:
+    std::mt19937 m_random_engine = std::mt19937(0);
 
     chunkie::message_segmenter<Type> ms;
     chunkie::message_reassembler<Type> mr;
 
-    stub::call<void(Type)> message_size_stub;
+    uint64_t m_max_message_size = 0;
+    uint64_t m_segment_size = 0;
+
+    // keep track of message number and size in two stubs:
+    stub::call<void(uint8_t, Type)> segmenter_message_stub;
+    stub::call<void(uint8_t, Type)> reassembler_message_stub;
 };
 
 // Test fixture for Typed Tests:
-template<class Type>
-class test_message_segment_reassemble_header_type :
-    public test_message_segment_reassemble<::testing::Test, Type>
-{};
+template <class Type>
+class test_message_segment_reassemble_header_type
+    : public test_message_segment_reassemble<::testing::Test, Type>
+{
+};
 
-class test_message_segment_reassemble_segment_size :
-    public test_message_segment_reassemble<::testing::TestWithParam<uint32_t>,
-                                            uint32_t>
+class test_message_segment_reassemble_segment_size
+    : public test_message_segment_reassemble<::testing::TestWithParam<uint32_t>,
+                                             uint32_t>
 {
     virtual uint64_t get_segment_size(uint64_t /*max_message_size*/)
     {
@@ -135,12 +178,7 @@ class test_message_segment_reassemble_segment_size :
     }
 };
 
-using HeaderTypes = ::testing::Types<
-                    uint8_t,
-                    uint16_t,
-                    uint32_t,
-                    uint64_t
-                    >;
+using HeaderTypes = ::testing::Types<uint8_t, uint16_t, uint32_t, uint64_t>;
 
 TYPED_TEST_CASE(test_message_segment_reassemble_header_type, HeaderTypes);
 
@@ -151,11 +189,99 @@ TYPED_TEST(test_message_segment_reassemble_header_type, run)
 
 // Test for different segment sizes
 INSTANTIATE_TEST_CASE_P(/* segment size */,
-    test_message_segment_reassemble_segment_size, 
-    ::testing::Values(100U, 250U, 500U, 1500U)
-);
+                        test_message_segment_reassemble_segment_size,
+                        ::testing::Values(100U, 250U, 500U, 1500U));
 
 TEST_P(test_message_segment_reassemble_segment_size, run)
+{
+    this->run();
+}
+
+class test_message_segment_reassemble_under_loss
+    : public test_message_segment_reassemble<
+          ::testing::TestWithParam<double /*loss rate*/>, uint32_t>
+{
+    // Redefine function reading segments to throw some away
+    virtual void read_segments_to_reassembler()
+    {
+        std::bernoulli_distribution packet_loss(GetParam());
+
+        // Pull out segments and put them into the reassembler:
+        while (ms.segment_available(m_segment_size))
+        {
+            std::vector<uint8_t> seg = ms.get_segment(m_segment_size);
+
+            EXPECT_EQ(m_segment_size, seg.size())
+                << "The segment length must be equal to the segment size";
+
+            // Simulate a lost packet
+            if (packet_loss(m_random_engine))
+            {
+                continue;
+            }
+
+            mr.read_segment(seg);
+        }
+
+        // Empty the segmenter with flush if any data stored inside:
+        if (ms.data_buffered() > 0)
+        {
+            SCOPED_TRACE(::testing::Message() << "Getting flush segment.");
+            std::vector<uint8_t> flush_seg = ms.flush(m_segment_size);
+
+            EXPECT_EQ(m_segment_size, flush_seg.size())
+                << "The segment length must be equal to the segment size";
+
+            mr.read_segment(flush_seg);
+        }
+    };
+
+    // Redefine verification function:
+    virtual void verify_messages()
+    {
+        boost::optional<uint8_t> last_reassembled_msgno;
+
+        for (uint32_t index = 0; index < reassembler_message_stub.calls(); ++index)
+        {
+            auto reassembler_arg =
+                reassembler_message_stub.call_arguments(index);
+            auto reassembler_id = std::get<0>(reassembler_arg);
+            auto reassembler_size = std::get<1>(reassembler_arg);
+
+            SCOPED_TRACE(::testing::Message()
+                         << "Verifying message with sequence number "
+                         << reassembler_id);
+
+            if (!last_reassembled_msgno)
+            {
+                last_reassembled_msgno = reassembler_id;
+            }
+            else
+            {
+                ASSERT_LT(*last_reassembled_msgno, reassembler_id)
+                    << "Messages reassembled out of order!";
+            }
+
+            ASSERT_LT(reassembler_id, segmenter_message_stub.calls())
+                << "Reassembled a message with sequence number larger than "
+                   "number of transmitted messages";
+
+            auto segmenter_arg =
+                segmenter_message_stub.call_arguments(reassembler_id);
+            auto segmenter_size = std::get<1>(segmenter_arg);
+
+            ASSERT_EQ(segmenter_size, reassembler_size)
+                << "Reassembled message size not correct";
+        }
+    }
+};
+
+// Test for different segment sizes
+INSTANTIATE_TEST_CASE_P(/* loss rate */,
+                        test_message_segment_reassemble_under_loss,
+                        ::testing::Values(0.0, 0.01, 0.05, 0.1, 0.2, 0.3));
+
+TEST_P(test_message_segment_reassemble_under_loss, run)
 {
     this->run();
 }
