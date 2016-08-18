@@ -26,8 +26,8 @@ namespace chunkie
 
         struct message
         {
-            HeaderType m_size;
-            std::vector<uint8_t> m_data;
+            HeaderType m_size = 0;
+            std::vector<uint8_t> m_data = std::vector<uint8_t>(0);
         };
 
     public:
@@ -89,7 +89,7 @@ namespace chunkie
                 {
                     m_message_queue.push_back(std::move(m_message.m_data));
 
-                    m_message.m_data.clear();
+                    m_message.m_data = std::vector<uint8_t>(0);
                     m_message.m_size = 0;
                 }
             }
