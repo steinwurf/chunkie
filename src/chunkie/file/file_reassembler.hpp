@@ -22,8 +22,8 @@ namespace chunkie
     {
     public:
 
-        file_reassembler(boost::filesystem::path base_dir
-        = boost::filesystem::current_path()) :
+        file_reassembler(boost::filesystem::path base_dir =
+                         boost::filesystem::current_path()) :
             m_path(base_dir)
         { }
 
@@ -63,7 +63,7 @@ namespace chunkie
 
     private:
 
-        void initiate(boost::filesystem::path filename, 
+        void initiate(boost::filesystem::path filename,
                       uint64_t offset, uint64_t total_size);
 
     private:

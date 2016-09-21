@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
     if (ms.data_buffered() > 0)
     {
         std::vector<uint8_t> seg = ms.flush(segment_size);
-        std::cout << "Handling flushed segment of size " 
+        std::cout << "Handling flushed segment of size "
                   << seg.size() << std::endl;
 
         mr.read_segment(seg);

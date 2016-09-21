@@ -24,9 +24,9 @@ namespace chunkie
     bool read_checksum(std::vector<uint8_t>& message)
     {
         // Generate checksum from buffer
-        uint32_t generated = detail::crc32(message.data(),
-        message.size()
-        - sizeof(uint32_t));
+        uint32_t generated = 
+            detail::crc32(message.data(), message.size() - sizeof(uint32_t));
+
         // Fetch embeeded checksum
         const uint32_t pos = message.size() - sizeof(uint32_t);
         uint32_t embedded = endian::big_endian::get32(&message.at(pos));

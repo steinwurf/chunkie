@@ -43,8 +43,8 @@ public:
     {
         ASSERT_GE(255u, messages);
 
-        std::uniform_int_distribution<uint64_t> random_size(ms.min_message_size,
-                                                            m_max_message_size);
+        std::uniform_int_distribution<uint64_t> random_size(
+            ms.min_message_size, m_max_message_size);
 
         /// Write messages to segmenter
         for (uint32_t index = 0; index < messages; ++index)
@@ -57,7 +57,7 @@ public:
             uint64_t message_size = random_size(m_random_engine);
 
             SCOPED_TRACE(::testing::Message() << "Message size "
-                                              << message_size);
+                         << message_size);
 
             // Create a message of size message size and contents i
             std::vector<uint8_t> message(message_size, uint8_t(index));
@@ -135,7 +135,7 @@ public:
         uint32_t messages = 100;
 
         SCOPED_TRACE(::testing::Message() << "Using segment size "
-                                          << m_segment_size);
+                     << m_segment_size);
 
         write_messages_to_segmenter(messages);
 
@@ -169,9 +169,9 @@ class test_message_segment_reassemble_header_type
 {
 };
 
-class test_message_segment_reassemble_segment_size
-    : public test_message_segment_reassemble<::testing::TestWithParam<uint32_t>,
-                                             uint32_t>
+class test_message_segment_reassemble_segment_size : public
+    test_message_segment_reassemble<
+    ::testing::TestWithParam<uint32_t>, uint32_t>
 {
     virtual uint64_t get_segment_size(uint64_t /*max_message_size*/)
     {
@@ -200,7 +200,7 @@ TEST_P(test_message_segment_reassemble_segment_size, run)
 
 class test_message_segment_reassemble_under_loss
     : public test_message_segment_reassemble<
-          ::testing::TestWithParam<double /*loss rate*/>, uint32_t>
+      ::testing::TestWithParam<double /*loss rate*/>, uint32_t>
 {
     // Redefine function reading segments to throw some away
     virtual void read_segments_to_reassembler()
@@ -266,7 +266,7 @@ class test_message_segment_reassemble_under_loss
 
             ASSERT_LT(reassembler_id, segmenter_message_stub.calls())
                 << "Reassembled a message with sequence number larger than "
-                   "number of transmitted messages";
+                "number of transmitted messages";
 
             auto segmenter_arg =
                 segmenter_message_stub.call_arguments(reassembler_id);

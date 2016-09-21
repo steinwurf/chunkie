@@ -14,7 +14,7 @@
 
 namespace chunkie
 {
-    void file_reassembler::initiate(boost::filesystem::path filename, 
+    void file_reassembler::initiate(boost::filesystem::path filename,
                                     uint64_t offset, uint64_t total_size)
     {
         assert(!m_initiated && "Initiate should only be called once");
@@ -27,15 +27,15 @@ namespace chunkie
         {
             uint32_t num = 0;
             std::string name;
-            
+
             do
             {
                 std::stringstream convert;
                 convert << filename.string() << "." << num++;
                 name = convert.str();
             }
-            while (boost::filesystem::exists(m_path / name)); 
-            
+            while (boost::filesystem::exists(m_path / name));
+
             filename = name;
         }
         m_filename = filename;
@@ -48,8 +48,8 @@ namespace chunkie
     void file_reassembler::save(const std::vector<uint8_t>& filedata)
     {
         // Write header to segment
-        endian::stream_reader<endian::big_endian> reader(filedata.data(),
-        filedata.size());
+        endian::stream_reader<endian::big_endian> reader(
+            filedata.data(), filedata.size());
 
         uint64_t offset;
         uint64_t total_size;
@@ -78,11 +78,11 @@ namespace chunkie
         boost::filesystem::path stem1 = filename;
         boost::filesystem::path stem2 = m_filename;
 
-        while(stem1.has_extension())
+        while (stem1.has_extension())
             stem1 = stem1.stem();
         while (stem2.has_extension())
             stem2 = stem2.stem();
-        
+
         assert(stem1 == stem2 && "filename mismatch!");
 
         // Update the offset value

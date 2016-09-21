@@ -13,30 +13,30 @@
 int main(int argc, char* argv[])
 {
     // Check cmdline argument [input file] [output path]
-    if(argc != 3)
+    if (argc != 3)
     {
-        std::cout << "Usage: " << argv[0] << " [path/to/input/file] " 
+        std::cout << "Usage: " << argv[0] << " [path/to/input/file] "
                   << "[path/to/output/directory]"<< std::endl;
         return 1;
     }
-    if(!boost::filesystem::exists(argv[1]))
+    if (!boost::filesystem::exists(argv[1]))
     {
         std::cout << "Path " << argv[1] << " does not exist." << std::endl;
         return 2;
     }
-    if(!boost::filesystem::is_regular_file(argv[1]))
+    if (!boost::filesystem::is_regular_file(argv[1]))
     {
         std::cout << "Path " << argv[1] << " is not a file. " << std::endl;
         return 3;
     }
 
-    if(!boost::filesystem::exists(argv[2]))
+    if (!boost::filesystem::exists(argv[2]))
     {
         std::cout << "Path " << argv[2] << " does not exist." << std::endl;
         return 4;
     }
 
-    if(!boost::filesystem::is_directory(argv[2]))
+    if (!boost::filesystem::is_directory(argv[2]))
     {
         std::cout << "Path " << argv[2] << " is not a directory." << std::endl;
         return 5;
@@ -64,10 +64,10 @@ int main(int argc, char* argv[])
         fr.save(buffer);
     }
 
-    if(!fr.end_of_file())
+    if (!fr.end_of_file())
     {
         std::cerr << "An error occurred, file " << fr.name()
-                  << " not reassembled correctly. Offset: " << fr.offset() 
+                  << " not reassembled correctly. Offset: " << fr.offset()
                   << std::endl;
         return 6;
     }

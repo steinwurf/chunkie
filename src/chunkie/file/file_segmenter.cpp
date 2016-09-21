@@ -16,8 +16,8 @@ namespace chunkie
     {
         std::vector<uint8_t> segment(m_max_segment_size);
         // Write header to segment
-        endian::stream_writer<endian::big_endian> writer(segment.data(),
-        segment.size());
+        endian::stream_writer<endian::big_endian> writer(
+            segment.data(), segment.size());
         writer.write(m_offset);
         writer.write(m_total_size);
         writer.write(m_filename_length);

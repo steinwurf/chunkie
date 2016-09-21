@@ -203,7 +203,6 @@ namespace chunkie
                 return segment;
             }
 
-            
             write_segment(segment);
 
             return segment;
@@ -261,7 +260,7 @@ namespace chunkie
                 auto hdr = make_header(start, message.size());
                 writer.write(hdr.data(), hdr.size());
 
-                uint32_t bytes = std::min(writer.remaining_size(), 
+                uint32_t bytes = std::min(writer.remaining_size(),
                                           (uint32_t)message.size());
 
                 writer.write(message.data(), bytes);
