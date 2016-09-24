@@ -29,7 +29,7 @@ public:
     {
         auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
 
-        m_timestamp_id = 
+        m_timestamp_id =
             std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
 
         std::stringstream convert_id;

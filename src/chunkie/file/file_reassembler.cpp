@@ -14,82 +14,82 @@
 
 namespace chunkie
 {
-    void file_reassembler::initiate(boost::filesystem::path filename,
-                                    uint64_t offset, uint64_t total_size)
+void file_reassembler::initiate(boost::filesystem::path filename,
+                                uint64_t offset, uint64_t total_size)
+{
+    assert(!m_initiated && "Initiate should only be called once");
+    assert(m_offset == 0 && "Should not initiate when offset is not zero");
+
+    m_offset = offset;
+    m_total_size = total_size;
+
+    if (boost::filesystem::exists(m_path / filename))
     {
-        assert(!m_initiated && "Initiate should only be called once");
-        assert(m_offset == 0 && "Should not initiate when offset is not zero");
+        uint32_t num = 0;
+        std::string name;
 
-        m_offset = offset;
-        m_total_size = total_size;
-
-        if (boost::filesystem::exists(m_path / filename))
+        do
         {
-            uint32_t num = 0;
-            std::string name;
-
-            do
-            {
-                std::stringstream convert;
-                convert << filename.string() << "." << num++;
-                name = convert.str();
-            }
-            while (boost::filesystem::exists(m_path / name));
-
-            filename = name;
+            std::stringstream convert;
+            convert << filename.string() << "." << num++;
+            name = convert.str();
         }
-        m_filename = filename;
+        while (boost::filesystem::exists(m_path / name));
 
-        m_file.open((m_path / filename).string(),
-                    std::ios::binary | std::ios::out);
-        m_initiated = true;
+        filename = name;
+    }
+    m_filename = filename;
+
+    m_file.open((m_path / filename).string(),
+                std::ios::binary | std::ios::out);
+    m_initiated = true;
+}
+
+void file_reassembler::save(const std::vector<uint8_t>& filedata)
+{
+    // Write header to segment
+    endian::stream_reader<endian::big_endian> reader(
+        filedata.data(), filedata.size());
+
+    uint64_t offset;
+    uint64_t total_size;
+    uint16_t filename_length;
+
+    reader.read(offset);
+    reader.read(total_size);
+    reader.read(filename_length);
+
+    // Read filename as stated by sender
+    std::string tmpfilename(filename_length, '\0');
+    reader.read((uint8_t*) &tmpfilename.front(), filename_length);
+    boost::filesystem::path filename(tmpfilename);
+
+    if (!m_initiated)
+    {
+        initiate(filename, offset, total_size);
     }
 
-    void file_reassembler::save(const std::vector<uint8_t>& filedata)
-    {
-        // Write header to segment
-        endian::stream_reader<endian::big_endian> reader(
-            filedata.data(), filedata.size());
+    assert(offset == m_offset&&
+           "Offset mismatch receiving file!");
+    assert(total_size == m_total_size &&
+           "Size mismatch receiving file!");
 
-        uint64_t offset;
-        uint64_t total_size;
-        uint16_t filename_length;
+    // match only on filename stems (we might add extensions if path exist)
+    boost::filesystem::path stem1 = filename;
+    boost::filesystem::path stem2 = m_filename;
 
-        reader.read(offset);
-        reader.read(total_size);
-        reader.read(filename_length);
+    while (stem1.has_extension())
+        stem1 = stem1.stem();
+    while (stem2.has_extension())
+        stem2 = stem2.stem();
 
-        // Read filename as stated by sender
-        std::string tmpfilename(filename_length, '\0');
-        reader.read((uint8_t*) &tmpfilename.front(), filename_length);
-        boost::filesystem::path filename(tmpfilename);
+    assert(stem1 == stem2 && "filename mismatch!");
 
-        if (!m_initiated)
-        {
-            initiate(filename, offset, total_size);
-        }
+    // Update the offset value
+    m_offset += reader.remaining_size();
 
-        assert(offset == m_offset&&
-               "Offset mismatch receiving file!");
-        assert(total_size == m_total_size &&
-               "Size mismatch receiving file!");
-
-        // match only on filename stems (we might add extensions if path exist)
-        boost::filesystem::path stem1 = filename;
-        boost::filesystem::path stem2 = m_filename;
-
-        while (stem1.has_extension())
-            stem1 = stem1.stem();
-        while (stem2.has_extension())
-            stem2 = stem2.stem();
-
-        assert(stem1 == stem2 && "filename mismatch!");
-
-        // Update the offset value
-        m_offset += reader.remaining_size();
-
-        m_file.write((char*) reader.remaining_data(),
-                     reader.remaining_size());
-    }
+    m_file.write((char*) reader.remaining_data(),
+                 reader.remaining_size());
+}
 
 }

@@ -16,119 +16,119 @@
 
 namespace chunkie
 {
-    template <typename HeaderType>
-    class message_reassembler
+template <typename HeaderType>
+class message_reassembler
+{
+public:
+    using header = std::array<uint8_t, sizeof(HeaderType)>;
+
+    using message_queue = std::deque<std::vector<uint8_t>>;
+
+    struct message
     {
-    public:
-        using header = std::array<uint8_t, sizeof(HeaderType)>;
+        HeaderType m_size = 0;
+        std::vector<uint8_t> m_data = std::vector<uint8_t>(0);
+    };
 
-        using message_queue = std::deque<std::vector<uint8_t>>;
+public:
+    // Read a segment. The buffer MUST start with a segment start,
+    // but does not need to be a full segment. If a partial segment is
+    // used, the remaining segment MUST be discarded if available.
+    // Segments must be read in-order,
+    void read_segment(const std::vector<uint8_t>& segment)
+    {
+        std::size_t consumed = 0;
 
-        struct message
+        while (consumed < segment.size() - sizeof(HeaderType))
         {
-            HeaderType m_size = 0;
-            std::vector<uint8_t> m_data = std::vector<uint8_t>(0);
-        };
+            header hdr;
+            std::copy(segment.begin() + consumed,
+                      segment.begin() + consumed + hdr.size(), hdr.begin());
 
-    public:
-        // Read a segment. The buffer MUST start with a segment start,
-        // but does not need to be a full segment. If a partial segment is
-        // used, the remaining segment MUST be discarded if available.
-        // Segments must be read in-order,
-        void read_segment(const std::vector<uint8_t>& segment)
-        {
-            std::size_t consumed = 0;
+            consumed += hdr.size();
 
-            while (consumed < segment.size() - sizeof(HeaderType))
+            const bool start = message_start(hdr);
+            const std::size_t remaining_size = message_size(hdr);
+
+            // If remaining size is zero we have hit a flush-segment
+            if (remaining_size == 0)
             {
-                header hdr;
-                std::copy(segment.begin() + consumed,
-                          segment.begin() + consumed + hdr.size(), hdr.begin());
+                break;
+            }
 
-                consumed += hdr.size();
+            // If we get a message start, then the full segment size is
+            // stored and the data should be cleared. It is possible that
+            // the previous message was not finished due to packet loss.
+            if (start)
+            {
+                m_message.m_size = remaining_size;
+                m_message.m_data.clear();
+                m_message.m_data.reserve(remaining_size);
+            }
 
-                const bool start = message_start(hdr);
-                const std::size_t remaining_size = message_size(hdr);
+            if (remaining_size !=
+                m_message.m_size - m_message.m_data.size())
+            {
+                // header mismatch, message lost
+                m_message.m_size = 0;
+                m_message.m_data.clear();
+            }
 
-                // If remaining size is zero we have hit a flush-segment
-                if (remaining_size == 0)
-                {
-                    break;
-                }
+            uint32_t bytes = std::min(segment.size() - consumed,
+                                      remaining_size);
 
-                // If we get a message start, then the full segment size is
-                // stored and the data should be cleared. It is possible that
-                // the previous message was not finished due to packet loss.
-                if (start)
-                {
-                    m_message.m_size = remaining_size;
-                    m_message.m_data.clear();
-                    m_message.m_data.reserve(remaining_size);
-                }
+            m_message.m_data.insert(m_message.m_data.end(),
+                                    segment.begin() + consumed,
+                                    segment.begin() + consumed + bytes);
 
-                if (remaining_size !=
-                    m_message.m_size - m_message.m_data.size())
-                {
-                    // header mismatch, message lost
-                    m_message.m_size = 0;
-                    m_message.m_data.clear();
-                }
+            consumed += bytes;
 
-                uint32_t bytes = std::min(segment.size() - consumed,
-                                          remaining_size);
+            // If message is complete, move to queue
+            if (m_message.m_size == m_message.m_data.size() &&
+                m_message.m_size > 0)
+            {
+                m_message_queue.push_back(std::move(m_message.m_data));
 
-                m_message.m_data.insert(m_message.m_data.end(),
-                                        segment.begin() + consumed,
-                                        segment.begin() + consumed + bytes);
-
-                consumed += bytes;
-
-                // If message is complete, move to queue
-                if (m_message.m_size == m_message.m_data.size() &&
-                    m_message.m_size > 0)
-                {
-                    m_message_queue.push_back(std::move(m_message.m_data));
-
-                    m_message.m_data = std::vector<uint8_t>(0);
-                    m_message.m_size = 0;
-                }
+                m_message.m_data = std::vector<uint8_t>(0);
+                m_message.m_size = 0;
             }
         }
+    }
 
-        // returns true if a message can be extracted
-        bool message_available()
-        {
-            return !m_message_queue.empty();
-        }
+    // returns true if a message can be extracted
+    bool message_available()
+    {
+        return !m_message_queue.empty();
+    }
 
-        // returns a message
-        std::vector<uint8_t> get_message()
-        {
-            assert(message_available());
+    // returns a message
+    std::vector<uint8_t> get_message()
+    {
+        assert(message_available());
 
-            std::vector<uint8_t> msg(std::move(m_message_queue.front()));
-            m_message_queue.pop_front();
+        std::vector<uint8_t> msg(std::move(m_message_queue.front()));
+        m_message_queue.pop_front();
 
-            return msg;
-        }
+        return msg;
+    }
 
-    private:
-        bool message_start(header hdr)
-        {
-            return (hdr.front() >> 7) & 1;
-        }
+private:
+    bool message_start(header hdr)
+    {
+        return (hdr.front() >> 7) & 1;
+    }
 
-        HeaderType message_size(header hdr)
-        {
-            hdr.front() &= ~(1 << 7);
-            return endian::big_endian::get<HeaderType>(hdr.data());
-        }
+    HeaderType message_size(header hdr)
+    {
+        hdr.front() &= ~(1 << 7);
+        return endian::big_endian::get<HeaderType>(hdr.data());
+    }
 
-    private:
-        // The current message being reassembled
-        message m_message;
+private:
+    // The current message being reassembled
+    message m_message;
 
-        // The queue of reassembled messages, front being the oldest
-        message_queue m_message_queue;
-    };
+    // The queue of reassembled messages, front being the oldest
+    message_queue m_message_queue;
+};
 }
