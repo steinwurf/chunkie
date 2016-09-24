@@ -17,66 +17,66 @@
 namespace chunkie
 {
 
-    /// Reassembles a file previously cut into chunks by the file_segmenter
-    class file_reassembler
+/// Reassembles a file previously cut into chunks by the file_segmenter
+class file_reassembler
+{
+public:
+
+    file_reassembler(boost::filesystem::path base_dir =
+                         boost::filesystem::current_path()) :
+        m_path(base_dir)
+    { }
+
+    ~file_reassembler()
     {
-    public:
-
-        file_reassembler(boost::filesystem::path base_dir
-        = boost::filesystem::current_path()) :
-            m_path(base_dir)
-        { }
-
-        ~file_reassembler()
+        if (m_file.is_open())
         {
-            if (m_file.is_open())
-            {
-                m_file.close();
-            }
+            m_file.close();
         }
+    }
 
-        // Save data to a file
-        // @param filedata a vector reference with file data incl. headers
-        // to reconstruct file
-        void save(const std::vector<uint8_t>& filedata);
+    // Save data to a file
+    // @param filedata a vector reference with file data incl. headers
+    // to reconstruct file
+    void save(const std::vector<uint8_t>& filedata);
 
-        // Return true if no more data available
-        bool end_of_file() const
-        {
-            return m_total_size == m_offset;
-        }
+    // Return true if no more data available
+    bool end_of_file() const
+    {
+        return m_total_size == m_offset;
+    }
 
-        uint64_t offset()
-        {
-            return m_offset;
-        }
+    uint64_t offset()
+    {
+        return m_offset;
+    }
 
-        uint64_t size()
-        {
-            return m_total_size;
-        }
+    uint64_t size()
+    {
+        return m_total_size;
+    }
 
-        std::string name()
-        {
-            return m_filename.string();
-        }
+    std::string name()
+    {
+        return m_filename.string();
+    }
 
-    private:
+private:
 
-        void initiate(boost::filesystem::path filename, 
-                      uint64_t offset, uint64_t total_size);
+    void initiate(boost::filesystem::path filename,
+                  uint64_t offset, uint64_t total_size);
 
-    private:
+private:
 
-        // Path and file
-        boost::filesystem::path m_path;
-        std::ofstream m_file;
-        boost::filesystem::path m_filename;
+    // Path and file
+    boost::filesystem::path m_path;
+    std::ofstream m_file;
+    boost::filesystem::path m_filename;
 
-        // Size and offset
-        uint64_t m_total_size = 0;
-        uint64_t m_offset = 0;
+    // Size and offset
+    uint64_t m_total_size = 0;
+    uint64_t m_offset = 0;
 
-        bool m_initiated = false;
-    };
+    bool m_initiated = false;
+};
 }

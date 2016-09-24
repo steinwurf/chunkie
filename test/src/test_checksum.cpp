@@ -25,10 +25,10 @@ TEST(test_checksum, checksum)
     {
         uint32_t size = randsize(engine);
         SCOPED_TRACE(::testing::Message()
-                        << "Verifying checksum for buffer of size " << size);
+                     << "Verifying checksum for buffer of size " << size);
 
         std::vector<uint8_t> buffer(size);
-        for(auto& val : buffer)
+        for (auto& val : buffer)
             val = (uint8_t)randval(engine);
 
         chunkie::write_checksum(buffer);
