@@ -11,7 +11,6 @@ namespace chunkie
 {
 void write_checksum(std::vector<uint8_t>& message)
 {
-    assert(message.size() > 0 && "Message size is zero");
     const uint32_t length = message.size();
 
     // std::vector<uint8_t> checksum_message(message.size() + 4);
@@ -24,7 +23,8 @@ void write_checksum(std::vector<uint8_t>& message)
 
 bool read_checksum(std::vector<uint8_t>& message)
 {
-    assert(message.size() > 0 && "Message size is zero");
+    assert(message.size() >= sizeof(boost::crc_32_type) &&
+           "Message size is smaller than checksum");
 
     // Generate checksum from buffer
     uint32_t generated =
