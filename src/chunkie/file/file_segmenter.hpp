@@ -65,8 +65,6 @@ public:
         return m_total_size;
     }
 
-
-
 private:
 
     // Path and file

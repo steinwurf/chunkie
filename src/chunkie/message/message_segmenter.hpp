@@ -165,6 +165,7 @@ public:
         queue_item item(true, message);
         m_message_queue.push_back(std::move(item));
     }
+
     void write_message(std::vector<uint8_t>&& message)
     {
         assert(message.size() >= min_message_size);
@@ -196,13 +197,6 @@ public:
                "Always use segment_available() before fetching segment.");
 
         std::vector<uint8_t> segment(segment_size);
-
-        if (!segment_available(segment_size))
-        {
-            segment.clear();
-            return segment;
-        }
-
         write_segment(segment);
 
         return segment;

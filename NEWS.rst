@@ -6,11 +6,11 @@ every change, see the Git log.
 
 Latest
 ------
-* tdb
+* tbd
 
 1.0.2
 -----
-* Patch: Fixed message reassembler occational crash when segments are lost.
+* Patch: Fixed message reassembler occasional crash when segments are lost.
 
 1.0.1
 -----
