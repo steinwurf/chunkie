@@ -14,7 +14,7 @@
 
 #include <boost/optional.hpp>
 
-#include <stub/call.hpp>
+#include <stub/function.hpp>
 
 #include <chunkie/message/message_reassembler.hpp>
 #include <chunkie/message/message_segmenter.hpp>
@@ -158,8 +158,8 @@ protected:
     uint64_t m_segment_size = 0;
 
     // keep track of message number and size in two stubs:
-    stub::call<void(uint8_t, Type)> segmenter_message_stub;
-    stub::call<void(uint8_t, Type)> reassembler_message_stub;
+    stub::function<void(uint8_t, Type)> segmenter_message_stub;
+    stub::function<void(uint8_t, Type)> reassembler_message_stub;
 };
 
 // Test fixture for Typed Tests:

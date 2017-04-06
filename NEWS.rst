@@ -7,6 +7,11 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+* Major: Upgrade to waf-tools 4
+* Major: Upgrade to endian 4
+* Major: Upgrade to boost 3
+* Minor: Upgrade to gtest 4
+* Minor: Upgrade to stub 6
 
 1.0.2
 -----
