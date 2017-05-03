@@ -17,7 +17,7 @@ TEST(test_checksum, checksum)
     std::mt19937 engine(0);
 
     std::uniform_int_distribution<uint32_t> randval(0, 255);
-    std::uniform_int_distribution<uint32_t> randsize(0, 5000);
+    std::uniform_int_distribution<uint32_t> randsize(5, 5000);
 
     uint32_t iterations = 1000;
 
@@ -33,6 +33,8 @@ TEST(test_checksum, checksum)
 
         chunkie::write_checksum(buffer);
 
+        std::vector<uint8_t> buffer_copy = buffer;
+
         ASSERT_EQ(size + sizeof(uint32_t), buffer.size())
             << "Checksum should have been appended";
 
@@ -42,5 +44,15 @@ TEST(test_checksum, checksum)
 
         ASSERT_EQ(size, buffer.size())
             << "Matching checksum must be stripped from buffer";
+
+        // Mess with the buffer (the copy) to ruin the checksum
+        // remove the first byte
+        buffer_copy.erase(buffer_copy.begin());
+
+        match = chunkie::read_checksum(buffer_copy);
+
+        ASSERT_FALSE(match) << "Checksum should not be correct";
+        ASSERT_NE(size, buffer_copy.size())
+            << "read_checksum modified buffer despite checksum mismatch";
     }
 }

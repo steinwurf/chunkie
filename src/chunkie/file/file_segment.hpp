@@ -7,20 +7,16 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cmath>
 #include <string>
-
-#include "file_segment.hpp"
-#include "../checksum/checksum.hpp"
+#include <vector>
 
 namespace chunkie
 {
 
-/// Cuts a file into smaller chunks. Enables an application to only load
-/// part of a file for transmission.
+/// Hold a segment of a file
+/// Segment is only valid as long as the corresponding data is valid
 ///
-/// structure of a file segment:
+/// Structure of a file segment:
 /// @code
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -58,74 +54,39 @@ namespace chunkie
 /// DATA: The file segment data - must be `segment size` bytes [buffer]
 ///
 /// @endcode
-
-/// Template argument <File> must implement interface
-///     const char_type* File::data()
-///     size_type File::size()
-///
-/// - boost::iostreams::mapped_file does this.
-template<class File>
-class file_segmenter
+struct file_segment
 {
+    file_segment(uint32_t id,
+                 uint32_t size,
+                 uint64_t offset,
+                 uint64_t file_size,
+                 uint32_t checksum,
+                 const std::string& filename,
+                 const uint8_t* data);
 
-public:
-    file_segmenter(File& file,
-                   std::string filename,
-                   uint32_t segment_size = 1'000'000) :
-        m_file(file),
-        m_filename(filename),
-        m_segment_size(segment_size),
-        m_segments(
-            (uint32_t) std::ceil(double(m_file.size()) / m_segment_size)),
-        m_header_size(8u * sizeof(uint32_t) + m_filename.length())
-    {
-    }
+    // Construct file segment from a buffer. The file segment is only valid
+    // as long as the buffer is valid
+    static file_segment from_buffer(const uint8_t* buffer, uint32_t size);
+    static file_segment from_buffer(const std::vector<uint8_t>& buffer);
 
-    std::string filename() const
-    {
-        return m_filename;
-    }
+    // Get the size of the file segment (data plus headers)
+    uint32_t size_serialized() const;
 
-    uint32_t segments() const
-    {
-        return m_segments;
-    }
+    void serialize(uint8_t* buffer, uint32_t size) const;
+    void serialize(std::vector<uint8_t>& buffer) const;
 
-    uint32_t file_size() const
-    {
-        return m_file.size();
-    }
+    // Return the name of the corresponding file
+    std::string filename() const;
 
-    file_segment read_segment(uint32_t id) const
-    {
-        assert(id < m_segments &&
-               "Can only get segments with ID less than number of segments");
+    // Return the size of the corresponding file
+    uint64_t file_size() const;
 
-        uint64_t offset = id * m_segment_size;
-        const uint8_t* data_ptr = (const uint8_t*) m_file.data() + offset;
-        uint32_t size =
-            std::min((uint64_t) m_segment_size, file_size() - offset);
-        uint32_t checksum = detail::crc32(data_ptr, size);
-
-        return {id,
-                size,
-                offset,
-                file_size(),
-                checksum,
-                m_filename,
-                data_ptr};
-    }
-
-private:
-
-    // Path and file
-    File& m_file;
+    const uint32_t m_id;
+    const uint32_t m_size;
+    const uint64_t m_offset;
+    const uint64_t m_file_size;
+    const uint32_t m_checksum;
     const std::string m_filename;
-
-    const uint32_t m_segment_size;
-    const uint32_t m_segments;
-
-    // Header
-    const uint32_t m_header_size;
+    const uint8_t* m_data;
 };
 }
