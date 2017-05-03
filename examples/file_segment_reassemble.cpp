@@ -5,10 +5,14 @@
 // The copyright notice above does not evidence any
 // actual or intended publication of such source code.
 
-#include <chunkie/file/file_segmenter.hpp>
 #include <chunkie/file/file_reassembler.hpp>
+#include <chunkie/file/file_segmenter.hpp>
+
+#include <boost/filesystem.hpp>
+#include <boost/iostreams/device/mapped_file.hpp>
 
 #include <iostream>
+
 
 int main(int argc, char* argv[])
 {
@@ -16,7 +20,7 @@ int main(int argc, char* argv[])
     if (argc != 3)
     {
         std::cout << "Usage: " << argv[0] << " [path/to/input/file] "
-                  << "[path/to/output/directory]"<< std::endl;
+                  << "[path/to/output/directory]" << std::endl;
         return 1;
     }
     if (!boost::filesystem::exists(argv[1]))
@@ -42,37 +46,66 @@ int main(int argc, char* argv[])
         return 5;
     }
 
+    boost::filesystem::path path_in(argv[1]);
+    boost::filesystem::path path_out(argv[2]);
+
     // Paths OK
 
-    // Open the file with the file segmenter
-    // We load in smaller chunks of up to 5MB and "send" these
-    chunkie::file_segmenter fs(argv[1], (uint32_t) 5e6);
+    // Open the input file for reading
+    boost::iostreams::mapped_file_source input_file(path_in);
 
-    // Prepare the file reassembler
-    chunkie::file_reassembler fr(argv[2]);
+    using segmenter_type =
+        chunkie::file_segmenter<boost::iostreams::mapped_file_source>;
+    using reassembler_type =
+        chunkie::file_reassembler<boost::iostreams::mapped_file_sink>;
 
-    while (!fs.end_of_file())
+    // Construct the segmenter
+    auto segmenter = std::make_unique<segmenter_type>(
+        input_file, path_in.filename().string(), 5'000'000);
+
+    // Prepare the reassembler and the output file
+    std::unique_ptr<reassembler_type> reassembler;
+    boost::iostreams::mapped_file_sink output_file;
+
+    // allocate buffer for serialized segments
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid = 0; sid < segmenter->segments(); ++sid)
     {
-        // Load a chunk from the file
-        std::vector<uint8_t> buffer = fs.load();
+        // scope for generated segment
+        {
+            chunkie::file_segment segment = segmenter->read_segment(sid);
 
-        // Send the buffer over the network or similar here
-        std::cout << "Processing file chunk of size "
-                  << buffer.size() << std::endl;
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer.data(), buffer.size());
+        } // segment goes of out scope
 
-        // Save the file chunk into the output file
-        fr.save(buffer);
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer);
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
+            {
+                // Prepare the file object using info in segment
+                boost::iostreams::mapped_file_params params{};
+                params.path = (path_out / segment.filename()).string();
+                params.new_file_size = segment.file_size();
+                output_file.open(params);
+
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    output_file, segment.filename());
+            }
+
+            if (!reassembler->has_segment(segment))
+                reassembler->write_segment(segment);
+        }
     }
 
-    if (!fr.end_of_file())
-    {
-        std::cerr << "An error occurred, file " << fr.name()
-                  << " not reassembled correctly. Offset: " << fr.offset()
-                  << std::endl;
-        return 6;
-    }
-
-    std::cout << "Saved file " << fr.name() << std::endl;
-
+    std::cout << "Segmented file of " << segmenter->file_size() << "bytes."
+              << std::endl;
+    std::cout << "Reassembled " << reassembler->reassembled_bytes()
+              << " bytes into file " << argv[2] << "/"
+              << reassembler->filename() << std::endl;
     return 0;
 }

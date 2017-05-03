@@ -4,9 +4,10 @@ News for chunkie
 This file lists the major changes between versions. For a more detailed list of
 every change, see the Git log.
 
+
 Latest
 ------
-* tbd
+* Major: Major overhaul of file_segmenter and file_reassembler. New API.
 
 2.0.0
 -----

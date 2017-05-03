@@ -7,129 +7,359 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
-#include <chrono>
-#include <limits>
-#include <iostream>
+#include <memory>
 #include <random>
-#include <sstream>
+#include <deque>
 
 #include <chunkie/checksum/checksum.hpp>
 
-#include <chunkie/file/file_segmenter.hpp>
 #include <chunkie/file/file_reassembler.hpp>
+#include <chunkie/file/file_segmenter.hpp>
 
-
-// Test Fixture
-class test_file_segment_reassemble : public ::testing::Test
+namespace
 {
-public:
+// Returns the first offset at which a data mismatch occurred.
+// If all indices matched the file size will be returned
+template <class File>
+void compare_files(File& original, File& copy, uint64_t& result)
+{
+    ASSERT_EQ(original.size(), copy.size()) << "File size mismatch";
 
-    virtual void SetUp()
+    for (uint64_t offset = 0; offset < original.size(); ++offset)
     {
-        auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+        result = offset;
+        uint8_t org = *(original.data() + offset);
+        uint8_t cpy = *(copy.data() + offset);
+        if (org != cpy)
+            return;
+    }
+    result = original.size();
+    return;
+}
+}
 
-        m_timestamp_id =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+TEST(test_file_segment_reassemble, ordered_segments)
+{
+    using segmenter_type = chunkie::file_segmenter<std::vector<uint8_t>>;
+    using reassembler_type = chunkie::file_reassembler<std::vector<uint8_t>>;
 
-        std::stringstream convert_id;
-        convert_id << "testfile" << "_" << m_timestamp_id << ".tmp";
-        m_filename_in = convert_id.str();
+    std::string filename_in = "testfile.tmp";
+    std::vector<uint8_t> filedata_in(10000);
 
-        // Create a file with random contents in current directory.
-        // Make sure it doesnt exists already.
-        uint64_t test_file_size = 1000000; // 1 MB file size
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
 
-        // random value distribution
-        std::mt19937 engine(0);
-        std::uniform_int_distribution<uint32_t> randval(0, 255);
+    for (uint8_t& val : filedata_in)
+        val = randval(engine);
 
-        // If this file exists already, create a new one
-        if (boost::filesystem::exists(m_path / m_filename_in))
+    std::vector<uint8_t> filedata_reassembled;
+
+    auto segmenter =
+        std::make_unique<segmenter_type>(filedata_in, filename_in, 532);
+
+    std::unique_ptr<reassembler_type> reassembler;
+
+    // allocate buffer for serialized segment
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid = 0; sid < segmenter->segments(); ++sid)
+    {
+        // scope for generated segment
         {
-            uint32_t num = 0;
-            std::string name;
+            chunkie::file_segment segment = segmenter->read_segment(sid);
 
-            do
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer);
+        } // segment goes of out scope
+
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer);
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
             {
-                std::stringstream convert;
-                convert << m_filename_in << "." << num++;
-                name = convert.str();
+                // Prepare the file object using info in segment
+                filedata_reassembled.resize(segment.file_size());
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    filedata_reassembled, segment.filename());
             }
-            while (boost::filesystem::exists(m_path / name));
+            ASSERT_FALSE(reassembler->has_segment(segment.m_id));
 
-            m_filename_in = name;
+            reassembler->write_segment(segment);
         }
-
-        std::ofstream dummy_file((m_path / m_filename_in).string(),
-                                 std::ios::binary | std::ios::out);
-
-        for (uint32_t i = 0; i < test_file_size; ++i)
-            dummy_file.put((uint32_t)randval(engine));
-        dummy_file.close();
     }
 
-    virtual void TearDown()
-    {
-        // Verify checksum of files:
-        uint64_t szin = boost::filesystem::file_size(m_path / m_filename_in);
-        uint64_t szout = boost::filesystem::file_size(m_path / m_filename_out);
+    EXPECT_EQ(segmenter->file_size(), reassembler->reassembled_bytes());
 
-        EXPECT_EQ(szin, szout) << "in/output files should be same size";
+    uint64_t result = 0;
+    compare_files(filedata_in, filedata_reassembled, result);
+    EXPECT_EQ(segmenter->file_size(), result) << "File mismatch at offset "
+                                              << result;
+}
 
-        {
-            std::ifstream infile((m_path / m_filename_in).string());
-            std::ifstream outfile((m_path / m_filename_out).string());
-
-            uint64_t index = 0;
-            while (!infile.eof())
-                EXPECT_EQ(infile.get(), outfile.get())
-                    << "Index " << index << "must be the same";
-        }
-        // Delete the created dummy file
-        EXPECT_TRUE(boost::filesystem::remove(m_path / m_filename_in))
-            << "Test file " << m_filename_in << " not found. Not removed.";
-
-        // Delete the 'received' file
-        EXPECT_TRUE(boost::filesystem::remove(m_path / m_filename_out))
-            << "Test file " << m_filename_out << " not found. Not removed.";
-    }
-
-protected:
-
-    boost::filesystem::path m_path = boost::filesystem::current_path();
-
-    uint64_t m_timestamp_id;
-
-    std::string m_filename_in = "not_specified_yet";
-    std::string m_filename_out = "not_specified_yet";
-};
-
-
-TEST_F(test_file_segment_reassemble, run)
+TEST(test_file_segment_reassemble, reversed_segments)
 {
-    uint32_t max_segment_size = 10240; // load 10kiB at a time
+    using segmenter_type = chunkie::file_segmenter<std::vector<uint8_t>>;
+    using reassembler_type = chunkie::file_reassembler<std::vector<uint8_t>>;
 
+    std::string filename_in = "testfile.tmp";
+    std::vector<uint8_t> filedata_in(10000);
+
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
+
+    for (uint8_t& val : filedata_in)
+        val = randval(engine);
+
+    std::vector<uint8_t> filedata_reassembled;
+
+    auto segmenter =
+        std::make_unique<segmenter_type>(filedata_in, filename_in, 324);
+
+    std::unique_ptr<reassembler_type> reassembler;
+
+    std::deque<uint32_t> sids;
+    for (uint32_t i = 0; i < segmenter->segments(); ++i)
+        sids.push_front(i);
+
+    // allocate buffer for serialized segment
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid : sids)
     {
-        chunkie::file_segmenter fs(m_path / m_filename_in, max_segment_size);
-        chunkie::file_reassembler fr(m_path);
-
-        while (!fs.end_of_file())
+        // scope for generated segment
         {
-            std::vector<uint8_t> buffer = fs.load();
+            chunkie::file_segment segment = segmenter->read_segment(sid);
 
-            EXPECT_GE(max_segment_size, buffer.size())
-                << "Segments must not be larger than specified size";
-            ASSERT_NE(0u, buffer.size()) << "Segments MUST be larger than 0";
-            fr.save(buffer);
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer.data(), buffer.size());
+        } // segment goes of out scope
+
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer);
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
+            {
+                // Prepare the file object using info in segment
+                filedata_reassembled.resize(segment.file_size());
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    filedata_reassembled, segment.filename());
+            }
+            ASSERT_FALSE(reassembler->has_segment(segment.m_id));
+
+            reassembler->write_segment(segment);
         }
-
-        EXPECT_TRUE(fr.end_of_file())
-            << "Reassembler should finish when segmenter is done";
-
-        EXPECT_EQ(fr.size(), fs.size())
-            << "The two files must be the same size";
-
-        m_filename_out = fr.name();
     }
+
+    EXPECT_EQ(segmenter->file_size(), reassembler->reassembled_bytes());
+
+    uint64_t result = 0;
+    compare_files(filedata_in, filedata_reassembled, result);
+    EXPECT_EQ(segmenter->file_size(), result) << "File mismatch at offset "
+                                              << result;
+}
+
+TEST(test_file_segment_reassemble, multiple_segment_copies)
+{
+    using segmenter_type = chunkie::file_segmenter<std::vector<uint8_t>>;
+    using reassembler_type = chunkie::file_reassembler<std::vector<uint8_t>>;
+
+    std::string filename_in = "testfile.tmp";
+    std::vector<uint8_t> filedata_in(10000);
+
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
+
+    for (uint8_t& val : filedata_in)
+        val = randval(engine);
+
+    std::vector<uint8_t> filedata_reassembled;
+
+    auto segmenter =
+        std::make_unique<segmenter_type>(filedata_in, filename_in, 753);
+
+    std::unique_ptr<reassembler_type> reassembler;
+
+    std::deque<uint32_t> sids;
+    for (uint32_t i = 0; i < segmenter->segments(); ++i)
+    {
+        sids.push_front(i);
+        sids.push_front(i);
+    }
+
+    // allocate buffer for serialized segment
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid : sids)
+    {
+        // scope for generated segment
+        {
+            chunkie::file_segment segment = segmenter->read_segment(sid);
+
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer.data(), buffer.size());
+        } // segment goes of out scope
+
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer.data(),
+                                                              buffer.size());
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
+            {
+                // Prepare the file object using info in segment
+                filedata_reassembled.resize(segment.file_size());
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    filedata_reassembled, segment.filename());
+            }
+
+            if (!reassembler->has_segment(segment))
+                reassembler->write_segment(segment);
+        }
+    }
+
+    EXPECT_EQ(segmenter->file_size(), reassembler->reassembled_bytes());
+
+    uint64_t result = 0;
+    compare_files(filedata_in, filedata_reassembled, result);
+    EXPECT_EQ(segmenter->file_size(), result) << "File mismatch at offset "
+                                              << result;
+}
+
+TEST(test_file_segment_reassemble, scrambled_segments)
+{
+    using segmenter_type = chunkie::file_segmenter<std::vector<uint8_t>>;
+    using reassembler_type = chunkie::file_reassembler<std::vector<uint8_t>>;
+
+    std::string filename_in = "testfile.tmp";
+    std::vector<uint8_t> filedata_in(10000);
+
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
+
+    for (uint8_t& val : filedata_in)
+        val = randval(engine);
+
+    std::vector<uint8_t> filedata_reassembled;
+
+    auto segmenter =
+        std::make_unique<segmenter_type>(filedata_in, filename_in, 192);
+
+    std::unique_ptr<reassembler_type> reassembler;
+
+    std::vector<uint32_t> sids;
+    for (uint32_t i = 0; i < segmenter->segments(); ++i)
+        sids.push_back(i);
+    std::vector<uint32_t> sids_ordered = sids;
+    std::random_shuffle(sids.begin(), sids.end());
+
+    // allocate buffer for serialized segments
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid : sids)
+    {
+        // scope for generated segment
+        {
+            chunkie::file_segment segment = segmenter->read_segment(sid);
+
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer.data(), buffer.size());
+        } // segment goes of out scope
+
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer.data(),
+                                                              buffer.size());
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
+            {
+                // Prepare the file object using info in segment
+                filedata_reassembled.resize(segment.file_size());
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    filedata_reassembled, segment.filename());
+            }
+            ASSERT_FALSE(reassembler->has_segment(segment.m_id));
+
+            reassembler->write_segment(segment);
+        }
+    }
+
+    EXPECT_EQ(segmenter->file_size(), reassembler->reassembled_bytes());
+
+    uint64_t result = 0;
+    compare_files(filedata_in, filedata_reassembled, result);
+    EXPECT_EQ(segmenter->file_size(), result) << "File mismatch at offset "
+                                              << result;
+}
+
+TEST(test_file_segment_reassemble, lost_segments_fail)
+{
+    using segmenter_type = chunkie::file_segmenter<std::vector<uint8_t>>;
+    using reassembler_type = chunkie::file_reassembler<std::vector<uint8_t>>;
+
+    std::string filename_in = "testfile.tmp";
+    std::vector<uint8_t> filedata_in(10000);
+
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<uint32_t> randval(0, 255);
+
+    for (uint8_t& val : filedata_in)
+        val = randval(engine);
+
+    std::vector<uint8_t> filedata_reassembled;
+
+    auto segmenter =
+        std::make_unique<segmenter_type>(filedata_in, filename_in, 333);
+
+    std::unique_ptr<reassembler_type> reassembler;
+
+    std::vector<uint32_t> sids;
+    for (uint32_t i = 0; i < segmenter->segments(); ++i)
+        sids.push_back(i);
+    std::random_shuffle(sids.begin(), sids.end());
+    sids.resize(sids.size() - 1);
+
+    // allocate buffer for serialized segment
+    std::vector<uint8_t> buffer;
+
+    for (uint32_t sid : sids)
+    {
+        // scope for generated segment
+        {
+            chunkie::file_segment segment = segmenter->read_segment(sid);
+
+            buffer.resize(segment.size_serialized(), 0);
+            segment.serialize(buffer.data(), buffer.size());
+        } // segment goes of out scope
+
+        // scope for reconstructed segment
+        {
+            auto segment = chunkie::file_segment::from_buffer(buffer.data(),
+                                                              buffer.size());
+            // Use the first segment to construct the reassembler
+            if (!reassembler)
+            {
+                // Prepare the file object using info in segment
+                filedata_reassembled.resize(segment.file_size());
+                // Construct reassembler
+                reassembler = std::make_unique<reassembler_type>(
+                    filedata_reassembled, segment.filename());
+            }
+            ASSERT_FALSE(reassembler->has_segment(segment.m_id));
+
+            reassembler->write_segment(segment);
+        }
+    }
+
+    EXPECT_GT(segmenter->file_size(), reassembler->reassembled_bytes());
+
+    uint64_t result = 0;
+    compare_files(filedata_in, filedata_reassembled, result);
+    EXPECT_NE(segmenter->file_size(), result)
+        << "File match even when segment was dropped:";
 }
