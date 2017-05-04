@@ -26,7 +26,7 @@ class test_message_segment_reassemble : public TestType
 public:
     virtual void SetUp()
     {
-        // Make sure we dont create abnormally large messages, max 5000 bytes
+        // Make sure we dont create abnormally large messages
         m_max_message_size =
             std::min((uint64_t) ms.max_message_size, (uint64_t) 2500);
 
@@ -108,6 +108,9 @@ public:
 
     virtual void verify_messages()
     {
+        EXPECT_EQ(
+            reassembler_message_stub.calls(),
+            segmenter_message_stub.calls());
         for (uint32_t msgno = 0; msgno < segmenter_message_stub.calls();
              ++msgno)
         {

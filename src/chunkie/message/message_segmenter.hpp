@@ -19,7 +19,7 @@ namespace chunkie
 {
 /// The message segmenter will cut messages into segments of a specific size
 /// The segmenter will append headers to the messages and the segments.
-/// Once header a the start of each segment, and one header for each
+/// One header at the start of each segment, and one header for each
 /// additional message within a segment.
 /// The length of these can be adjusted with the HeaderType template
 /// parameter, providing maximum messages lengths given the following rules:
@@ -34,11 +34,11 @@ namespace chunkie
 /// Below is a few examples of how the message serializer operates:
 ///
 /// Example 1:
-/// 3 symbols of size 20 bytes containing one full message of len 40 bytes.
-/// In the middle of symbol no. 3 a new message starts
+/// 3 Segment of size 20 bytes containing one full message of len 40 bytes.
+/// In the middle of segment no. 3 a new message starts
 /// @code
 ///
-/// Symbol 1:
+/// Segment 1:
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -53,7 +53,7 @@ namespace chunkie
 /// |                                                               | <- msg
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///
-/// Symbol 2:
+/// Segment 2:
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -68,7 +68,7 @@ namespace chunkie
 /// |                                                               | <- msg
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///
-/// Symbol 3:
+/// Segment 3:
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -87,11 +87,11 @@ namespace chunkie
 ///
 ///
 /// Example 2:
-/// 2 symbols of size 20 bytes containing three full messages of 8, 12 and
+/// 2 segments of size 20 bytes containing three full messages of 8, 12 and
 /// 5 bytes respectively
 /// @code
 ///
-/// Symbol 1:
+/// Segment 1:
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -106,7 +106,7 @@ namespace chunkie
 /// |                                                               | <- msg
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///
-/// Symbol 2:
+/// Segment 2:
 ///  0                   1                   2                   3
 ///  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -121,9 +121,9 @@ namespace chunkie
 /// |         |0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0| <- msg
 /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ///
-/// The remaining space in the symbol after msg 3 is zero padded as it can
+/// The remaining space in the segment after msg 3 is zero padded as it can
 /// not fit another header. A new message will start in the
-/// following symbol.
+/// following segment.
 ///
 /// @endcode
 
