@@ -7,7 +7,7 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Major: Added bitter dependency.
 
 3.0.0
 -----
