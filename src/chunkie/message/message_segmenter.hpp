@@ -17,14 +17,6 @@
 
 #include <bitter/writer.hpp>
 
-
-
-#include <iostream>
-
-
-
-
-
 namespace chunkie
 {
 /// The message segmenter will cut messages into segments of a specific size
