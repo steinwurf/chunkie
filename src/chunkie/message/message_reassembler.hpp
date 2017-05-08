@@ -74,7 +74,7 @@ private:
 
     private:
 
-        header_type m_offset;
+        header_type m_offset = 0;
         std::vector<uint8_t> m_data;
     };
 
