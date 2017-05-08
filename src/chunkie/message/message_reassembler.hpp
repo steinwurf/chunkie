@@ -26,7 +26,7 @@ public:
     using header_type = HeaderType;
 
     // The header consists of a size and a start bit
-    using header_parser =
+    using header_reader =
         bitter::reader<header_type, (sizeof(header_type) * 8) - 1, 1>;
 
 private:
@@ -43,7 +43,7 @@ private:
         }
 
         /// Inserts data from an endian_stream reader.
-        void insert(
+        void copy_from_reader(
             endian::stream_reader<endian::big_endian>& source, uint32_t bytes)
         {
             assert(m_offset + bytes <= m_data.size());
@@ -93,7 +93,7 @@ public:
             header_type header_data;
             reader.read(header_data);
 
-            auto header = header_parser(header_data);
+            auto header = header_reader(header_data);
 
             auto remaining_size =
                 header.template field<0>().template read_as<header_type>();
@@ -126,7 +126,7 @@ public:
             else
             {
                 // Read data
-                m_message.insert(reader, bytes);
+                m_message.copy_from_reader(reader, bytes);
             }
 
             // If message is complete, move to queue
