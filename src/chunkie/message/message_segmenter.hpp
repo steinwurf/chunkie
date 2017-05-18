@@ -15,6 +15,8 @@
 #include <endian/stream_writer.hpp>
 #include <endian/big_endian.hpp>
 
+#include <bitter/writer.hpp>
+
 namespace chunkie
 {
 /// The message segmenter will cut messages into segments of a specific size
@@ -130,60 +132,96 @@ namespace chunkie
 template<typename HeaderType>
 class message_segmenter
 {
-    using header = std::array<uint8_t, sizeof(HeaderType)>;
-
-    using queue_item = std::pair<bool, std::vector<uint8_t>>;
-
-    using message_queue = std::deque<queue_item>;
-
 public:
+
+    using header_type = HeaderType;
+
+    // The header consists of a size and a start bit
+    using header_writer =
+        bitter::writer<header_type, (sizeof(header_type) * 8) - 1, 1>;
 
     static const uint64_t min_message_size = 1;
 
     static const uint64_t max_message_size =
-        std::numeric_limits<HeaderType>::max() / 2;
+        std::numeric_limits<header_type>::max() / 2;
 
+private:
+
+    struct message
+    {
+        message(const std::vector<uint8_t>& data) :
+            m_start(true),
+            m_data(data)
+        { }
+
+        header_type header() const
+        {
+            assert(m_data.size() >= 1);
+            assert(m_data.size() <= max_message_size);
+
+            auto writer = header_writer();
+            writer.template field<0>(m_data.size());
+            writer.template field<1>(m_start);
+            return writer.data();
+        }
+
+        void move_to_writer(
+            endian::stream_writer<endian::big_endian>& writer, uint32_t bytes)
+        {
+            m_start = false;
+            writer.write(m_data.data(), bytes);
+            m_data.erase(m_data.begin(), m_data.begin() + bytes);
+        }
+
+        uint32_t size() const
+        {
+            return m_data.size();
+        }
+
+    private:
+
+        bool m_start;
+        std::vector<uint8_t> m_data;
+    };
+
+public:
 
     // returns the amount of message data in bytes stored in the segmenter.
-    uint64_t data_buffered()
+    uint64_t data_buffered() const
     {
         uint64_t bytes = 0;
 
         for (const auto& item : m_message_queue)
         {
-            bytes += item.second.size();
+            bytes += item.size();
         }
 
         return bytes;
     }
 
     // param: buffer containing message to write
-    void write_message(const std::vector<uint8_t>& message)
+    void write_message(const std::vector<uint8_t>& data)
     {
-        assert(message.size() >= min_message_size);
-        assert(message.size() <= max_message_size);
-        queue_item item(true, message);
+        assert(data.size() >= min_message_size);
+        assert(data.size() <= max_message_size);
+        message item(data);
         m_message_queue.push_back(std::move(item));
     }
 
-    void write_message(std::vector<uint8_t>&& message)
+    void write_message(std::vector<uint8_t>&& data)
     {
-        assert(message.size() >= min_message_size);
-        assert(message.size() <= max_message_size);
-        queue_item item(true, message);
+        assert(data.size() >= min_message_size);
+        assert(data.size() <= max_message_size);
+        message item(data);
         m_message_queue.push_back(std::move(item));
     }
 
     // param: size of segment to write
     // return: true if a segment of size 'segment_size' can be written.
-    bool segment_available(uint32_t segment_size)
+    bool segment_available(uint32_t segment_size) const
     {
-        uint64_t bytes_available = 0;
-
-        for (const auto& item : m_message_queue)
-        {
-            bytes_available += sizeof(HeaderType) + item.second.size();
-        }
+        uint64_t bytes_available = data_buffered() +
+                                   sizeof(HeaderType) * m_message_queue.size();
 
         return bytes_available >= segment_size;
     }
@@ -208,7 +246,7 @@ public:
     // than a segment size, an assertion is thrown.
     std::vector<uint8_t> flush(uint32_t segment_size)
     {
-        assert(!segment_available(segment_size) &&
+        assert(segment_available(segment_size) == 0 &&
                "Flushing when full segment is available!");
 
         assert(data_buffered() != 0 &&
@@ -223,53 +261,30 @@ public:
 
 private:
 
-    header make_header(bool start, uint32_t size)
-    {
-        assert(size >= 1);
-        assert(size <= max_message_size);
-        header hdr;
-        endian::big_endian::put<HeaderType>(size, hdr.data());
-        hdr.front() |= start << 7;
-        return hdr;
-    }
-
     void write_segment(std::vector<uint8_t>& segment)
     {
         assert(segment.size() > sizeof(HeaderType) &&
                "Segment size must be bigger than the size of HeaderType");
 
-        endian::stream_writer<endian::big_endian> writer(segment.data(),
-                                                         segment.size());
+        endian::stream_writer<endian::big_endian> writer(segment);
 
-        for (auto it = m_message_queue.begin();
-             it != m_message_queue.end();
-             it = m_message_queue.erase(it))
+        auto message = m_message_queue.begin();
+        while (message != m_message_queue.end() &&
+               writer.remaining_size() > sizeof(header_type))
         {
-            auto& start = it->first;
-            auto& message = it->second;
+            writer.write(message->header());
+            uint32_t bytes = std::min(writer.remaining_size(), message->size());
+            message->move_to_writer(writer, bytes);
 
-            if (message.size() == 0)
-                continue;
-
-            auto hdr = make_header(start, message.size());
-            writer.write(hdr.data(), hdr.size());
-
-            uint32_t bytes = std::min(writer.remaining_size(),
-                                      (uint32_t)message.size());
-
-            writer.write(message.data(), bytes);
-
-            start = false;
-            message.erase(message.begin(), message.begin() + bytes);
-
-            if (writer.remaining_size() <= sizeof(HeaderType))
-                break;
+            // If there's no more data in the message remove it.
+            if (message->size() == 0)
+                message = m_message_queue.erase(message);
         }
     }
 
 private:
 
-    message_queue m_message_queue;
+    std::deque<message> m_message_queue;
 
 };
 }

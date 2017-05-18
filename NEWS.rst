@@ -7,6 +7,7 @@ every change, see the Git log.
 
 Latest
 ------
+* Minor: Exposed ``header_type`` type definition.
 * Major: Added bitter dependency.
 
 3.0.0
