@@ -7,6 +7,10 @@ every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+4.0.0
+-----
 * Minor: Exposed ``header_type`` type definition.
 * Major: Added bitter dependency.
 * Minor: Added error code API to ``file_segment::from_buffer``. Functions
