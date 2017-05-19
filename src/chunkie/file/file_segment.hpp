@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace chunkie
@@ -66,6 +67,11 @@ struct file_segment
 
     // Construct file segment from a buffer. The file segment is only valid
     // as long as the buffer is valid
+    static file_segment from_buffer(const uint8_t* buffer,
+                                    uint32_t size,
+                                    std::error_code& error) noexcept;
+    static file_segment from_buffer(const std::vector<uint8_t>& buffer,
+                                    std::error_code& error) noexcept;
     static file_segment from_buffer(const uint8_t* buffer, uint32_t size);
     static file_segment from_buffer(const std::vector<uint8_t>& buffer);
 
@@ -81,12 +87,18 @@ struct file_segment
     // Return the size of the corresponding file
     uint64_t file_size() const;
 
-    const uint32_t m_id;
-    const uint32_t m_size;
-    const uint64_t m_offset;
-    const uint64_t m_file_size;
-    const uint32_t m_checksum;
-    const std::string m_filename;
-    const uint8_t* m_data;
+private:
+
+    file_segment() {}
+
+public:
+
+    const uint32_t m_id = 0;
+    const uint32_t m_size = 0;
+    const uint64_t m_offset = 0;
+    const uint64_t m_file_size = 0;
+    const uint32_t m_checksum = 0;
+    const std::string m_filename = "";
+    const uint8_t* m_data = nullptr;
 };
 }

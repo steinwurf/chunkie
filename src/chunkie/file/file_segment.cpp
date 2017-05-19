@@ -37,7 +37,8 @@ uint32_t file_segment::size_serialized() const
     return (sizeof(m_id) + sizeof(m_size) + sizeof(m_offset) +
             sizeof(m_file_size) + sizeof(m_checksum) +
             sizeof(uint32_t) + // filename length field
-            m_filename.length() + m_size);
+            m_filename.length() +
+            m_size);
 }
 
 
@@ -48,8 +49,18 @@ std::string file_segment::filename() const
 }
 
 file_segment file_segment::from_buffer(const uint8_t* buffer,
-                                       uint32_t bufsize)
+                                       uint32_t bufsize,
+                                       std::error_code& error)  noexcept
 {
+    uint32_t header_min_length = sizeof(m_id) + sizeof(m_size) + sizeof(m_offset) +
+                                 sizeof(m_file_size) + sizeof(m_checksum) + sizeof(uint32_t);
+
+    if (bufsize < header_min_length)
+    {
+        error = std::make_error_code(std::errc::message_size);
+        return file_segment();
+    }
+
     endian::stream_reader<endian::big_endian> deserializer(buffer, bufsize);
 
     uint32_t id;
@@ -61,15 +72,18 @@ file_segment file_segment::from_buffer(const uint8_t* buffer,
     std::string filename;
     const uint8_t* data;
 
-    // throw would be better
-    assert(bufsize > 8 * sizeof(uint32_t));
-
     deserializer.read(id);
     deserializer.read(size);
     deserializer.read(offset);
     deserializer.read(file_size);
     deserializer.read(checksum);
     deserializer.read(filename_length);
+
+    if (bufsize != header_min_length + filename_length + size)
+    {
+        error = std::make_error_code(std::errc::message_size);
+        return file_segment();
+    }
 
     // Throw/error_code would be better
     assert(bufsize >= 8 * sizeof(uint32_t) + filename_length + size);
@@ -78,8 +92,22 @@ file_segment file_segment::from_buffer(const uint8_t* buffer,
                            deserializer.remaining_data() + filename_length);
     data = deserializer.remaining_data() + filename_length;
 
-    return file_segment(
-        id, size, offset, file_size, checksum, filename, data);
+    return file_segment(id, size, offset, file_size, checksum, filename, data);
+}
+
+file_segment file_segment::from_buffer(const std::vector<uint8_t>& buffer,
+                                       std::error_code& error)  noexcept
+{
+    return from_buffer(buffer.data(), buffer.size(), error);
+}
+
+file_segment file_segment::from_buffer(const uint8_t* buffer, uint32_t bufsize)
+{
+    std::error_code error;
+    file_segment fs = from_buffer(buffer, bufsize, error);
+    if (error)
+        throw error;
+    return fs;
 }
 
 file_segment file_segment::from_buffer(const std::vector<uint8_t>& buffer)
@@ -106,6 +134,7 @@ void file_segment::serialize(uint8_t* buffer, uint32_t size) const
 
 void file_segment::serialize(std::vector<uint8_t>& buffer) const
 {
+    buffer.resize(size_serialized());
     serialize(buffer.data(), buffer.size());
 }
 
@@ -113,5 +142,4 @@ uint64_t file_segment::file_size() const
 {
     return m_file_size;
 }
-
 }

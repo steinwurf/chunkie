@@ -9,6 +9,11 @@ Latest
 ------
 * Minor: Exposed ``header_type`` type definition.
 * Major: Added bitter dependency.
+* Minor: Added error code API to ``file_segment::from_buffer``. Functions
+  ``static file_segment file_segment::from_buffer(const uint8_t*, uint32_t, std::error&) noexcept``
+  and
+  ``static file_segment file_segment::from_buffer(const std::vector<uint8_t>&, std::error&) noexcept``
+  now available.
 
 3.0.0
 -----
