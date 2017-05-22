@@ -7,7 +7,7 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Patch: Made ``message_reassembler::message_available()`` ``const``.
 
 4.0.0
 -----
