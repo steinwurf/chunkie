@@ -138,7 +138,7 @@ public:
     }
 
     // returns true if a message can be extracted
-    bool message_available()
+    bool message_available() const
     {
         return !m_message_queue.empty();
     }
