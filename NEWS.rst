@@ -4,9 +4,12 @@ News for chunkie
 This file lists the major changes between versions. For a more detailed list of
 every change, see the Git log.
 
-
 Latest
 ------
+* tbd
+
+4.0.1
+-----
 * Patch: Made ``message_reassembler::message_available()`` ``const``.
 
 4.0.0
