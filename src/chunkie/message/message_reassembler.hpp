@@ -44,7 +44,7 @@ private:
 
         /// Inserts data from an endian_stream reader.
         void copy_from_reader(
-            endian::stream_reader<endian::big_endian>& source, uint32_t bytes)
+            endian::stream_reader<endian::big_endian>& source, uint64_t bytes)
         {
             assert(m_offset + bytes <= m_data.size());
             source.read(m_data.data() + m_offset, bytes);

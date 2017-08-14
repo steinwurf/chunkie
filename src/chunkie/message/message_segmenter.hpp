@@ -166,14 +166,14 @@ private:
         }
 
         void move_to_writer(
-            endian::stream_writer<endian::big_endian>& writer, uint32_t bytes)
+            endian::stream_writer<endian::big_endian>& writer, uint64_t bytes)
         {
             m_start = false;
             writer.write(m_data.data(), bytes);
             m_data.erase(m_data.begin(), m_data.begin() + bytes);
         }
 
-        uint32_t size() const
+        header_type size() const
         {
             return m_data.size();
         }
@@ -273,7 +273,8 @@ private:
                writer.remaining_size() > sizeof(header_type))
         {
             writer.write(message->header());
-            uint32_t bytes = std::min(writer.remaining_size(), message->size());
+            auto bytes =
+                std::min((header_type)writer.remaining_size(), message->size());
             message->move_to_writer(writer, bytes);
 
             // If there's no more data in the message remove it.
