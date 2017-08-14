@@ -18,7 +18,7 @@ void write_checksum(std::vector<uint8_t>& message)
 
     message.resize(length+sizeof(checksum));
 
-    endian::big_endian::put32(checksum, message.data()+length);
+    endian::big_endian::put32(checksum, message.data() + length);
 }
 
 bool read_checksum(std::vector<uint8_t>& message)
