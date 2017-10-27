@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <ostream>
+#include <iostream>
 
 #include <chunkie/message/message_segmenter.hpp>
 
@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    auto filename = std::string(argv[1]);
+    std::string filename = argv[1];
     std::ofstream output_file(filename, std::ios::binary);
 
     chunkie::message_segmenter<uint8_t> ms;
