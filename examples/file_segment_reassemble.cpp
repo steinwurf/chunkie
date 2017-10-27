@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
             buffer.resize(segment.size_serialized(), 0);
             segment.serialize(buffer.data(), buffer.size());
-        } // segment goes of out scope
+        } // segment goes out of scope
 
         // scope for reconstructed segment
         {
