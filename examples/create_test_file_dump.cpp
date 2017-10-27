@@ -6,11 +6,9 @@
 // actual or intended publication of such source code.
 
 #include <iostream>
-
-#include <boost/filesystem.hpp>
+#include <fstream>
 
 #include <chunkie/message/message_segmenter.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
 
 int main(int argc, char* argv[])
 {
