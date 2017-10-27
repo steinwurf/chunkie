@@ -5,19 +5,20 @@
 // The copyright notice above does not evidence any
 // actual or intended publication of such source code.
 
+#include <chunkie/message/message_reassembler.hpp>
+#include <chunkie/message/message_segmenter.hpp>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <iostream>
 #include <limits>
 #include <random>
+#include <fstream>
 
 #include <boost/optional.hpp>
 
 #include <stub/function.hpp>
-
-#include <chunkie/message/message_reassembler.hpp>
-#include <chunkie/message/message_segmenter.hpp>
 
 // Test Base Fixture
 template <typename TestType, typename Type>
@@ -289,4 +290,42 @@ INSTANTIATE_TEST_CASE_P(/* loss rate */,
 TEST_P(test_message_segment_reassemble_under_loss, run)
 {
     this->run();
+}
+
+TEST(test_wire_format, dump)
+{
+    auto error_message =
+        "If this failed, the wire format might have changed. \n"
+        "This should be addressed in the news file. \n"
+        "To fix the issue created a new test_dump file with "
+        "example/create_test_file_dump example\n";
+
+    chunkie::message_reassembler<uint8_t> message_reassembler;
+
+    std::ifstream file("test_dump", std::ios::binary|std::ios::ate);
+    ASSERT_TRUE(file.is_open());
+
+    auto size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    auto segment_size = 50;
+    std::vector<uint8_t> segment(segment_size);
+
+
+    for (uint32_t i = 0; i < size / segment.size(); ++i)
+    {
+        file.read((char*)segment.data(), segment.size());
+        message_reassembler.read_segment(segment);
+    }
+
+    uint32_t number_of_segments = 0;
+    while (message_reassembler.message_available())
+    {
+        std::vector<uint8_t> message = message_reassembler.get_message();
+        std::vector<uint8_t> expected_message(message.size(), message.size());
+        EXPECT_EQ(expected_message, message) << error_message;
+        number_of_segments++;
+    }
+    EXPECT_EQ(3U, number_of_segments) << error_message;
+    file.close();
 }
