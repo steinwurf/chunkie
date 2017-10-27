@@ -18,7 +18,7 @@ void write_checksum(std::vector<uint8_t>& message)
 
     message.resize(length+sizeof(checksum));
 
-    endian::big_endian::put32(checksum, message.data() + length);
+    endian::big_endian::put(checksum, message.data() + length);
 }
 
 bool read_checksum(std::vector<uint8_t>& message)
@@ -32,7 +32,8 @@ bool read_checksum(std::vector<uint8_t>& message)
 
     // Fetch embeeded checksum
     const uint32_t pos = message.size() - sizeof(uint32_t);
-    uint32_t embedded = endian::big_endian::get32(&message.at(pos));
+    uint32_t embedded = 0;
+    endian::big_endian::get(embedded, &message.at(pos));
 
     // Compare checksum
     if (generated == embedded)
