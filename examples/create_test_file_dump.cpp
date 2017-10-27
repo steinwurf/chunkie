@@ -51,6 +51,5 @@ int main(int argc, char* argv[])
     output_file.close();
 
     std::cout << "Created " << number_of_segments << " segments" << std::endl;
-    std::cout << "Dump file written to " << filename << std::endl;
     return 0;
 }
