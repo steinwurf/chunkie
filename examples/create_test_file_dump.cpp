@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <ostream>
 
 #include <chunkie/message/message_segmenter.hpp>
 
