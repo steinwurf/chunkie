@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     std::ofstream output_file(filename, std::ios::binary);
 
     chunkie::message_segmenter<uint8_t> ms;
-    for (const auto& size : {127, 64, 38})
+    for (uint32_t size : {127, 64, 38})
     {
         std::cout << "Creating message of size " << size << std::endl;
         ms.write_message(std::vector<uint8_t>(size, size));
