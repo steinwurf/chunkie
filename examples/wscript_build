@@ -11,3 +11,9 @@ bld.program(
     source=['message_segment_reassemble.cpp'],
     target='message_segment_reassemble',
     use=['chunkie'])
+
+bld.program(
+    features='cxx',
+    source=['create_test_file_dump.cpp'],
+    target='create_test_file_dump',
+    use=['chunkie', 'boost_filesystem', 'boost_iostreams'])
