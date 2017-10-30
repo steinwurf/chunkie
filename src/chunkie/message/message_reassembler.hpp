@@ -14,7 +14,7 @@
 
 #include <endian/big_endian.hpp>
 #include <endian/stream_reader.hpp>
-#include <bitter/reader.hpp>
+#include <bitter/msb0_reader.hpp>
 
 namespace chunkie
 {
@@ -27,7 +27,7 @@ public:
 
     // The header consists of a size and a start bit
     using header_reader =
-        bitter::reader<header_type, (sizeof(header_type) * 8) - 1, 1>;
+        bitter::msb0_reader<header_type, 1, (sizeof(header_type) * 8) - 1>;
 
 private:
 
@@ -95,10 +95,11 @@ public:
 
             auto header = header_reader(header_data);
 
-            auto remaining_size =
-                header.template field<0>().template read_as<header_type>();
 
-            auto start = header.template field<1>().template read_as<bool>();
+            auto start = header.template field<0>().template as<bool>();
+
+            auto remaining_size =
+                header.template field<1>().template as<header_type>();
 
             // If remaining size is zero we have hit a flush-segment
             if (remaining_size == 0)

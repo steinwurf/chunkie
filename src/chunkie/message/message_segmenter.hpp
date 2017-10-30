@@ -15,7 +15,7 @@
 #include <endian/stream_writer.hpp>
 #include <endian/big_endian.hpp>
 
-#include <bitter/writer.hpp>
+#include <bitter/msb0_writer.hpp>
 
 namespace chunkie
 {
@@ -138,7 +138,7 @@ public:
 
     // The header consists of a size and a start bit
     using header_writer =
-        bitter::writer<header_type, (sizeof(header_type) * 8) - 1, 1>;
+        bitter::msb0_writer<header_type, 1, (sizeof(header_type) * 8) - 1>;
 
     static const uint64_t min_message_size = 1;
 
@@ -160,8 +160,8 @@ private:
             assert(m_data.size() <= max_message_size);
 
             auto writer = header_writer();
-            writer.template field<0>(m_data.size());
-            writer.template field<1>(m_start);
+            writer.template field<0>(m_start);
+            writer.template field<1>(m_data.size());
             return writer.data();
         }
 
