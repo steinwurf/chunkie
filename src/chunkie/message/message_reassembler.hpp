@@ -144,6 +144,13 @@ public:
         return !m_message_queue.empty();
     }
 
+    // returns size of message which can be extracted
+    uint32_t message_size() const
+    {
+        assert(message_available());
+        return m_message_queue.front().size();
+    }
+
     // returns a message
     std::vector<uint8_t> get_message()
     {

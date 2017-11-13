@@ -6,7 +6,7 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: Expose ``message_size`` on ``message_reassembler``.
 
 6.0.0
 -----
