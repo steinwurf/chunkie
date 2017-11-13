@@ -102,7 +102,9 @@ public:
         // Pull reassembled messages from the reassemlber:
         while (mr.message_available())
         {
+            auto size = mr.message_size();
             std::vector<uint8_t> msg = mr.get_message();
+            EXPECT_EQ(msg.size(), size);
             reassembler_message_stub(msg.front(), msg.size());
         }
     }
@@ -321,7 +323,10 @@ TEST(test_wire_format, dump)
     uint32_t number_of_segments = 0;
     while (message_reassembler.message_available())
     {
-        std::vector<uint8_t> message = message_reassembler.get_message();
+        auto size = message_reassembler.message_size();
+        auto message = message_reassembler.get_message();
+        EXPECT_EQ(message.size(), size);
+
         std::vector<uint8_t> expected_message(message.size(), message.size());
         EXPECT_EQ(expected_message, message) << error_message;
         number_of_segments++;
