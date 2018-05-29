@@ -16,12 +16,12 @@ TEST(test_serializer, basic)
     using serializer_type = chunkie::serializer<uint32_t>;
     serializer_type serializer;
 
-    EXPECT_EQ(4U, sizeof(serializer_type::header_type));
+    EXPECT_EQ(4U, serializer_type::header_size);
     EXPECT_EQ(2147483647U, serializer_type::max_object_size);
     EXPECT_TRUE(serializer.object_proccessed());
 
     std::vector<uint8_t> object = {1,2,3,4};
-    std::vector<uint8_t> buffer = {0b10000000,0,0,4,1,2,3,4};
+    std::vector<uint8_t> expected_buffer = {0b10000000,0,0,4,1,2,3,4};
 
     {
         std::vector<uint8_t> buffer(20);
@@ -29,9 +29,9 @@ TEST(test_serializer, basic)
         auto bytes = serializer.write_to_buffer(buffer.data(), buffer.size());
         buffer.resize(bytes);
 
-        EXPECT_EQ(bytes, object.size() + sizeof(serializer_type::header_type));
+        EXPECT_EQ(bytes, object.size() + serializer_type::header_size);
         EXPECT_TRUE(serializer.object_proccessed());
-        EXPECT_EQ(buffer, buffer);
+        EXPECT_EQ(expected_buffer, buffer);
     }
 
     {
@@ -40,9 +40,9 @@ TEST(test_serializer, basic)
         auto bytes = serializer.write_to_buffer(buffer.data(), buffer.size());
         buffer.resize(bytes);
 
-        EXPECT_EQ(bytes, object.size() + sizeof(serializer_type::header_type));
+        EXPECT_EQ(bytes, object.size() + serializer_type::header_size);
         EXPECT_TRUE(serializer.object_proccessed());
-        EXPECT_EQ(buffer, buffer);
+        EXPECT_EQ(expected_buffer, buffer);
     }
 }
 
