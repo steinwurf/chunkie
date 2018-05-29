@@ -15,8 +15,7 @@ project_dependencies = \
         'waf-tools',
         'endian',
         'boost',
-        'gtest',
-        'stub',
+        'gtest'
     ]
 
 
