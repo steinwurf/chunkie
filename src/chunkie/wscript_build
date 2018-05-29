@@ -4,6 +4,6 @@ bld.stlib(
     features='cxx',
     source=bld.path.ant_glob('**/*.cpp'),
     target='chunkie',
-    use=['endian_includes', 'boost_includes', 'bitter_includes'],
+    use=['endian_includes', 'bitter_includes'],
     export_includes=['..']
 )

@@ -21,26 +21,11 @@
         "sources": ["github.com/steinwurf/bitter.git"]
     },
     {
-        "name": "boost",
-        "resolver": "git",
-        "method": "semver",
-        "major": 3,
-        "sources": ["github.com/steinwurf/boost.git"]
-    },
-    {
         "name": "gtest",
         "internal": true,
         "resolver": "git",
         "method": "semver",
         "major": 4,
         "sources": ["github.com/steinwurf/gtest.git"]
-    },
-    {
-        "name": "stub",
-        "internal": true,
-        "resolver": "git",
-        "method": "semver",
-        "major": 6,
-        "sources": ["github.com/steinwurf/stub.git"]
     }
 ]

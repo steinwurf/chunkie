@@ -7,6 +7,11 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+* Major: Complete re-implementation see new classes and example, wireformat
+  remains the same.
+* Major: Checksum functionality removed.
+* Major: Removed boost dependency.
+* Minor: Removed internal dependency stub
 
 7.0.0
 -----
