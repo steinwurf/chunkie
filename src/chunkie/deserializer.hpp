@@ -33,7 +33,7 @@ private:
 public:
 
     // Read from a buffer. buffers must be read in-order,
-    void set_buffer(const uint8_t* data, uint32_t size)
+    void set_buffer(const uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
         assert(size > header_size && "Buffer smaller than header");
@@ -91,7 +91,7 @@ public:
 
 private:
 
-    void read_header(const uint8_t* data, uint32_t size)
+    void read_header(const uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
 

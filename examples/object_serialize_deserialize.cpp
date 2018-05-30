@@ -41,12 +41,15 @@ int main(int argc, char* argv[])
         // until the object have been processed, write buffers
         while (!serializer.object_proccessed())
         {
+            if (buffer.size() > serializer.max_write_buffer_size())
+            {
+                buffer.resize(serializer.max_write_buffer_size());
+            }
 
-            auto bytes_written = serializer.write_to_buffer(
-                buffer.data(), buffer.size());
+            serializer.write_buffer(buffer.data(), buffer.size());
 
             // output the new buffer
-            buffers.emplace_back(buffer.data(), buffer.data() + bytes_written);
+            buffers.emplace_back(buffer.begin(), buffer.end());
         }
     }
 

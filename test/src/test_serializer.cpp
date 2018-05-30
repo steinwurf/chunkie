@@ -9,6 +9,7 @@
 
 #include <chunkie/serializer.hpp>
 
+#include <algorithm>
 #include <vector>
 
 TEST(test_serializer, basic)
@@ -24,23 +25,25 @@ TEST(test_serializer, basic)
     std::vector<uint8_t> expected_buffer = {0b10000000,0,0,4,1,2,3,4};
 
     {
-        std::vector<uint8_t> buffer(20);
+        // std::vector<uint8_t> buffer(20);
         serializer.set_object(object.data(), object.size());
-        auto bytes = serializer.write_to_buffer(buffer.data(), buffer.size());
-        buffer.resize(bytes);
+        std::vector<uint8_t> buffer(serializer.max_write_buffer_size());
+        serializer.write_buffer(buffer.data(), buffer.size());
+        // buffer.resize(bytes);
 
-        EXPECT_EQ(bytes, object.size() + serializer_type::header_size);
+        EXPECT_EQ(object.size() + serializer_type::header_size, buffer.size());
         EXPECT_TRUE(serializer.object_proccessed());
         EXPECT_EQ(expected_buffer, buffer);
     }
 
     {
-        std::vector<uint8_t> buffer(20);
         serializer.set_object(object.data(), object.size());
-        auto bytes = serializer.write_to_buffer(buffer.data(), buffer.size());
-        buffer.resize(bytes);
+        std::vector<uint8_t> buffer(serializer.max_write_buffer_size());
+        // auto bytes = std::min<uint32_t>(buffer.size/)
+        serializer.write_buffer(buffer.data(), buffer.size());
+        // buffer.resize(bytes);
 
-        EXPECT_EQ(bytes, object.size() + serializer_type::header_size);
+        EXPECT_EQ(object.size() + serializer_type::header_size, buffer.size());
         EXPECT_TRUE(serializer.object_proccessed());
         EXPECT_EQ(expected_buffer, buffer);
     }
@@ -62,14 +65,6 @@ TEST(test_serializer, write_partial_objects)
             { 22,23,24 }
         };
 
-    std::vector<std::vector<uint8_t>> buffers;
-
-    // add a buffer of size 5,6,7, ... , 14 bytes
-    for (uint32_t bytes = 5; bytes < 15; bytes++)
-    {
-        buffers.emplace_back(bytes);
-    }
-
     std::vector<std::vector<uint8_t>> expected_buffers =
         {
             { 0b10000000,0,0,4, 0 },
@@ -90,7 +85,10 @@ TEST(test_serializer, write_partial_objects)
 
         };
 
-    auto buffer = buffers.begin();
+    std::vector<std::vector<uint8_t>> buffers;
+
+    // We write to buffer of growing size 5,6,7,8, ... bytes
+    uint32_t buffer_size = 5;
 
     for (const auto& object : objects)
     {
@@ -98,8 +96,15 @@ TEST(test_serializer, write_partial_objects)
 
         while (!serializer.object_proccessed())
         {
-            serializer.write_to_buffer(buffer->data(), buffer->size());
-            buffer++;
+            std::vector<uint8_t> buffer(buffer_size, 0U);
+            buffer_size++;
+
+            auto bytes = std::min<uint32_t>(buffer.size(),
+                                            serializer.max_write_buffer_size());
+
+            serializer.write_buffer(buffer.data(), bytes);
+
+            buffers.push_back(buffer);
         }
     }
 

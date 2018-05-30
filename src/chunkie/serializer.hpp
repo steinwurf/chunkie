@@ -55,23 +55,38 @@ public:
         assert(object != nullptr && "Null pointer provided");
         assert(size > 0 && "Object is empty");
         assert(size <= max_object_size && "object too big for header type");
-        assert(m_object_remaining == 0 && "Last object not proccessed");
+        assert(m_object == nullptr && "Last object not proccessed");
 
         m_object = object;
         m_object_size = size;
         m_object_remaining = size;
     }
 
+    /// Check if a prevously set object has been completely processed
+    /// @return false if some data from the set object has not been written
+    /// to a buffer 
     bool object_proccessed() const
     {
         return m_object == nullptr;
     }
 
-    /// @return the number of bytes written to the buffer
-    uint32_t write_to_buffer(uint8_t* data, uint32_t size)
+    /// @return the maximal number of bytes that can be written to a buffer.
+    header_type max_write_buffer_size() const
+    {
+        assert(m_object != nullptr && "No object set");
+        return header_size + m_object_remaining;
+    }
+
+    /// Write size bytes to the provided buffer
+    /// fails if buffer is provided that is larger than what can be written
+    /// @param data the buffer to write to
+    /// @param the size of teh buffer
+    void write_buffer(uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
         assert(size > header_size && "Buffer too small for header");
+        assert(size <= max_write_buffer_size() &&
+               "Buffer larger resulting write of all remaining data");
         assert(m_object != nullptr && "No object set");
 
         endian::stream_writer<endian::big_endian> writer(data, size);
@@ -95,8 +110,6 @@ public:
             m_object = nullptr;
             m_object_size = 0;
         }
-
-        return bytes + header_size;
     }
 
 private:
