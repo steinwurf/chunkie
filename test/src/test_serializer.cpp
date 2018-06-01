@@ -25,11 +25,9 @@ TEST(test_serializer, basic)
     std::vector<uint8_t> expected_buffer = {0b10000000,0,0,4,1,2,3,4};
 
     {
-        // std::vector<uint8_t> buffer(20);
         serializer.set_object(object.data(), object.size());
         std::vector<uint8_t> buffer(serializer.max_write_buffer_size());
         serializer.write_buffer(buffer.data(), buffer.size());
-        // buffer.resize(bytes);
 
         EXPECT_EQ(object.size() + serializer_type::header_size, buffer.size());
         EXPECT_TRUE(serializer.object_proccessed());
@@ -39,9 +37,7 @@ TEST(test_serializer, basic)
     {
         serializer.set_object(object.data(), object.size());
         std::vector<uint8_t> buffer(serializer.max_write_buffer_size());
-        // auto bytes = std::min<uint32_t>(buffer.size/)
         serializer.write_buffer(buffer.data(), buffer.size());
-        // buffer.resize(bytes);
 
         EXPECT_EQ(object.size() + serializer_type::header_size, buffer.size());
         EXPECT_TRUE(serializer.object_proccessed());

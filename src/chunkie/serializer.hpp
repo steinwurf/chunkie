@@ -64,7 +64,7 @@ public:
 
     /// Check if a prevously set object has been completely processed
     /// @return false if some data from the set object has not been written
-    /// to a buffer 
+    /// to a buffer
     bool object_proccessed() const
     {
         return m_object == nullptr;
