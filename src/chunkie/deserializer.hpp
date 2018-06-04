@@ -33,7 +33,7 @@ private:
 public:
 
     // Read from a buffer. buffers must be read in-order,
-    void set_buffer(const uint8_t* data, uint32_t size)
+    void set_buffer(const uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
         assert(size > header_size && "Buffer smaller than header");
@@ -55,7 +55,7 @@ public:
         return m_object_size;
     }
 
-    /// @return true if the final part of a object was written
+    /// Writes available bytes to the given pointer.
     void write_to_object(uint8_t* object)
     {
         assert(object != nullptr && "Null pointer provided");
@@ -84,6 +84,7 @@ public:
         read_header(m_buffer, m_buffer_remaining);
     }
 
+    /// @return true if the final part of an object was written
     bool object_completed() const
     {
         return m_object_completed;
@@ -91,7 +92,7 @@ public:
 
 private:
 
-    void read_header(const uint8_t* data, uint32_t size)
+    void read_header(const uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
 
