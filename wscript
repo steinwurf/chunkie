@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 APPNAME = 'chunkie'
-VERSION = '7.0.0'
+VERSION = '8.0.0'
 
 
 def build(bld):

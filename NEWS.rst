@@ -7,6 +7,9 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+
+8.0.0
+-----
 * Major: Complete re-implementation see new classes and example, wireformat
   remains the same.
 * Major: Checksum functionality removed.
