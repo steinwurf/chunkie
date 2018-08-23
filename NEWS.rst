@@ -7,6 +7,9 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+
+8.0.1
+-----
 * Patch: Fixed incorrect parsing of headers in the deserializer which could
   result in a segmentation fault in cases with high losses and large objects.
 
