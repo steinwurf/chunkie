@@ -52,6 +52,8 @@ public:
     /// @returns the size of the current object being parsed
     header_type object_size() const
     {
+        assert(!buffer_proccessed() && "No object data available,"
+               "check that buffer is not processed before calling");
         return m_object_size;
     }
 
@@ -81,7 +83,14 @@ public:
             m_object_completed = true;
         }
 
-        read_header(m_buffer, m_buffer_remaining);
+        if (m_buffer_remaining > sizeof(header_type))
+        {
+            read_header(m_buffer, m_buffer_remaining);
+            return;
+        }
+
+        m_buffer = nullptr;
+        m_buffer_remaining = 0;
     }
 
     /// @return true if the final part of an object was written
@@ -95,13 +104,7 @@ private:
     void read_header(const uint8_t* data, header_type size)
     {
         assert(data != nullptr && "Null pointer provided");
-
-        if (size <= header_size)
-        {
-            m_buffer = nullptr;
-            m_buffer_remaining = 0;
-            return;
-        }
+        assert(size > sizeof(header_type) && "Buffer smaller than header");
 
         auto reader = endian::stream_reader<endian::big_endian>(data, size);
 
@@ -113,6 +116,7 @@ private:
         m_buffer = data + header_size;
         m_buffer_remaining = size - header_size;
 
+        // Start of new object
         if (start == true)
         {
             m_object_size = remaining;
@@ -120,12 +124,23 @@ private:
             return;
         }
 
+        // Continue reading object
         if ((remaining == m_object_remaining) && (remaining != 0))
         {
             return;
         }
 
-        read_header(m_buffer + remaining, m_buffer_remaining - remaining);
+        // Read next header if inside the current buffer
+        if ((m_buffer_remaining > remaining) &&
+            ((m_buffer_remaining - remaining) > sizeof(header_type)))
+        {
+            read_header(m_buffer + remaining, m_buffer_remaining - remaining);
+            return;
+        }
+
+        // Any remaining data do not contain a header to be read
+        m_buffer = nullptr;
+        m_buffer_remaining = 0;
     }
 
 private:

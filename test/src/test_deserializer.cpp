@@ -28,7 +28,6 @@ TEST(test_deserializer, basic)
         std::vector<uint8_t> message(4U);
         deserializer.write_to_object(message.data());
 
-        EXPECT_EQ(0U, deserializer.object_size());
         EXPECT_TRUE(deserializer.buffer_proccessed());
         EXPECT_TRUE(deserializer.object_completed());
         EXPECT_EQ(expected_object, message);
@@ -42,7 +41,6 @@ TEST(test_deserializer, basic)
         std::vector<uint8_t> message(4U);
         deserializer.write_to_object(message.data());
 
-        EXPECT_EQ(0U, deserializer.object_size());
         EXPECT_TRUE(deserializer.buffer_proccessed());
         EXPECT_TRUE(deserializer.object_completed());
         EXPECT_EQ(expected_object, message);
@@ -79,7 +77,7 @@ TEST(test_deserializer, many_objects_in_buffer)
     deserializer.set_buffer(buffer.data(), buffer.size());
     EXPECT_FALSE(deserializer.buffer_proccessed());
 
-    while (deserializer.object_size() != 0)
+    while (!deserializer.buffer_proccessed())
     {
         std::vector<uint8_t> object(deserializer.object_size());
         deserializer.write_to_object(object.data());
