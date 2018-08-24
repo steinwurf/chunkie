@@ -7,6 +7,8 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+* Minor: Added examples for serializing into zeropadded buffers and to
+  concanate serialized data into buffers.
 
 8.0.1
 -----
