@@ -12,9 +12,9 @@
 #include <iostream>
 
 // In this example objects are serialized to buffers of a maximum size with
-// only one object present in each buffer. This would typically be relevant when
-// objects are much larger than the buffers to which they are serialized and
-// latency is a very high priority.
+// one or more objects present in each buffer. This would typically be relevant
+// when overhead is an important criteria and buffers should have identical or
+// similar size.
 int main(int argc, char* argv[])
 {
     (void) argc;
