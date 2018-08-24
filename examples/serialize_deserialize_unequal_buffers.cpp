@@ -50,16 +50,16 @@ int main(int argc, char* argv[])
             serializer.write_buffer(buffer.data(), buffer.size());
 
             std::cout << "Writing to buffer number " << buffers.size() <<
-                " width size " << buffer.size() <<
-                " from object of size " << object.size() << std::endl;
+                      " width size " << buffer.size() <<
+                      " from object of size " << object.size() << std::endl;
 
-                buffers.emplace_back(buffer.begin(), buffer.end());
-                buffer.clear();
+            buffers.emplace_back(buffer.begin(), buffer.end());
+            buffer.clear();
         }
     }
 
     std::cout << objects.size() << " objects serialized to " <<
-        buffers.size() << " buffers." << std::endl << std::endl;
+              buffers.size() << " buffers." << std::endl << std::endl;
 
     std::vector<uint8_t> object;
     uint32_t objects_restored = 0;

@@ -11,11 +11,10 @@
 
 #include <iostream>
 
-// In this example objects are serialized to buffers of a fixed size with only
-// one object present in each buffer and each buffer zeropadded for identically
-// sized buffers. This would be relevant when the output buffers must be
-// identical.
-
+// In this example objects are serialized to buffers of a maximum size with
+// only one object present in each buffer. This would typically be relevant when
+// objects are much larger than the buffers to which they are serialized and
+// latency is a very high priority.
 int main(int argc, char* argv[])
 {
     (void) argc;
@@ -35,29 +34,47 @@ int main(int argc, char* argv[])
 
     std::vector<std::vector<uint8_t>> buffers;
 
+    std::vector<uint8_t> buffer;
+
     // send all objects
     for (const auto& object : objects)
     {
         serializer.set_object(object.data(), object.size());
 
+
         // until the object have been processed, write buffers
         while (!serializer.object_proccessed())
         {
-            auto write_size = std::min<uint32_t>(
-                max_buffer_size, serializer.max_write_buffer_size());
+            // the size of the current buffer before appending aditional data
+            auto old_size = buffer.size();
 
-            std::vector<uint8_t> buffer(max_buffer_size, 0U);
+            auto buffer_size = std::min<uint32_t>(
+                max_buffer_size, old_size + serializer.max_write_buffer_size());
 
-            serializer.write_buffer(buffer.data(), write_size);
+            buffer.resize(buffer_size);
+
+            serializer.write_buffer(buffer.data() + old_size,
+                                    buffer.size() - old_size);
 
             std::cout << "Writing to buffer number " << buffers.size() <<
-                      " width size " << buffer.size() <<
-                      " from object of size " << object.size() << std::endl;
+                      " current size is " << buffer.size() <<
+                      ", from object of size " << object.size() << std::endl;
 
-            buffers.emplace_back(buffer.begin(), buffer.end());
-            buffer.clear();
+            if (buffer.size() == max_buffer_size)
+            {
+                buffers.emplace_back(buffer.begin(), buffer.end());
+                buffer.clear();
+            }
         }
     }
+
+    // add the last partial completed buffer
+    if (buffer.size() > 0)
+    {
+        buffer.resize(max_buffer_size, 0U);
+        buffers.emplace_back(buffer.begin(), buffer.end());
+    }
+
 
     std::cout << objects.size() << " objects serialized to " <<
               buffers.size() << " buffers." << std::endl << std::endl;
