@@ -5,3 +5,9 @@ bld.program(
     source=['serialize_deserialize_unequal_buffers.cpp'],
     target='serialize_deserialize_unequal_buffers',
     use=['chunkie'])
+
+bld.program(
+    features='cxx',
+    source=['serialize_deserialize_zeropadded_buffers.cpp'],
+    target='serialize_deserialize_zeropadded_buffers',
+    use=['chunkie'])

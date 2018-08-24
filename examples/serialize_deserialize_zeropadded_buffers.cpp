@@ -11,10 +11,11 @@
 
 #include <iostream>
 
-// In this example objects are serialized to buffers of a maximum size with
-// only one object present in each buffer. This would typically be relevant when
-// objects are much larger than the buffers to which they are serialized and
-// latency is a very high priority.
+// In this example objects are serialized to buffers of a fixed size with only
+// one object present in each buffer and each buffer zeropadded for identically
+// sized buffers. This would be relevant when the output buffers must be
+// identical.
+
 int main(int argc, char* argv[])
 {
     (void) argc;
@@ -42,12 +43,12 @@ int main(int argc, char* argv[])
         // until the object have been processed, write buffers
         while (!serializer.object_proccessed())
         {
-            auto buffer_size = std::min<uint32_t>(
+            auto write_size = std::min<uint32_t>(
                 max_buffer_size, serializer.max_write_buffer_size());
 
-            std::vector<uint8_t> buffer(buffer_size, 0U);
+            std::vector<uint8_t> buffer(max_buffer_size, 0U);
 
-            serializer.write_buffer(buffer.data(), buffer.size());
+            serializer.write_buffer(buffer.data(), write_size);
 
             std::cout << "Writing to buffer number " << buffers.size() <<
                 " width size " << buffer.size() <<
