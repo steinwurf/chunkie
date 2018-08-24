@@ -2,6 +2,18 @@
 
 bld.program(
     features='cxx',
-    source=['object_serialize_deserialize.cpp'],
-    target='object_serialize_deserialize',
+    source=['serialize_deserialize_unequal_buffers.cpp'],
+    target='serialize_deserialize_unequal_buffers',
+    use=['chunkie'])
+
+bld.program(
+    features='cxx',
+    source=['serialize_deserialize_zeropadded_buffers.cpp'],
+    target='serialize_deserialize_zeropadded_buffers',
+    use=['chunkie'])
+
+bld.program(
+    features='cxx',
+    source=['serialize_deserialize_concatenated_buffers.cpp'],
+    target='serialize_deserialize_concatenated_buffers',
     use=['chunkie'])
