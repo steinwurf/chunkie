@@ -5,15 +5,15 @@ chunkie
 Quick Overview
 --------------
 
-Chunkie provides functionality for serializing an object into a stream, and
-deserialize a stream back into an object. This can be useful when sending big
+Chunkie provides functionality for serializing an object into a stream and
+deserializing a stream back into an object. This can be useful when sending big
 objects such as video frames or files over a network.
 
-The deserializer can reconstructs the original object when all the buffers are
-inputted in order. If buffers are inputted out of order or some buffers lost
+The deserializer can reconstruct the original object when all the buffers are
+inputted in order. If buffers are inputted out of order or some buffers are lost
 the object cannot be reconstructed.
 
-*Note* that there is not explicit integrity check before an object is outputted.
+*Note* that there is no explicit integrity check before an object is outputted.
 So if it is critical that erroneous objects are detected an integrity check
 should be made on outputted symbols. It is possible that an erroneous object
 can be outputted in circumstances where buffers are lost in a very particular
