@@ -7,6 +7,8 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+* Major: Using endian 10
+* Major: Using bitter 5
 
 8.1.0
 -----
