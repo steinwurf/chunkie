@@ -8,7 +8,8 @@ Latest
 ------
 * tbd
 * Minor: Added examples for serializing into zeropadded buffers and to
-  concanate serialized data into buffers.
+  concatenate serialized data into buffers.
+* Patch: Improved safety of deserializer.
 
 8.0.1
 -----

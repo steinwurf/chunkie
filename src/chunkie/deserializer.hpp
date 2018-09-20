@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 
 #include <endian/big_endian.hpp>
 #include <endian/stream_reader.hpp>
@@ -37,16 +38,18 @@ public:
     {
         assert(data != nullptr && "Null pointer provided");
         assert(size > header_size && "Buffer smaller than header");
-        assert(m_buffer == nullptr && "Previous buffer not proccessed");
-        assert(m_buffer_remaining == 0 && "Previous buffer not proccessed");
+        assert(m_buffer_reader == nullptr && "Previous buffer not proccessed");
 
-        read_header(data, size);
+        m_buffer_reader = std::make_unique<endian::stream_reader<
+                          endian::big_endian>>(data, size);
+
+        read_header();
     }
 
     /// @returns true if all data in the set buffer have been processed
     bool buffer_proccessed() const
     {
-        return m_buffer == nullptr;
+        return m_buffer_reader == nullptr;
     }
 
     /// @returns the size of the current object being parsed
@@ -61,20 +64,15 @@ public:
     void write_to_object(uint8_t* object)
     {
         assert(object != nullptr && "Null pointer provided");
-        assert(m_buffer != nullptr && "No buffer set");
-        assert(m_buffer_remaining != 0 && "No remaining data in buffer");
 
         m_object_completed = false;
 
-        auto reader = endian::stream_reader<endian::big_endian>(
-            m_buffer, m_buffer_remaining);
-        auto bytes = std::min(m_buffer_remaining, m_object_remaining);
+        auto bytes = std::min<header_type>(
+            m_buffer_reader->remaining_size(), m_object_remaining);
 
         auto offset = m_object_size - m_object_remaining;
-        reader.read(object + offset, bytes);
+        m_buffer_reader->read(object + offset, bytes);
 
-        m_buffer += bytes;
-        m_buffer_remaining -= bytes;
         m_object_remaining -= bytes;
 
         if (m_object_remaining == 0)
@@ -83,14 +81,13 @@ public:
             m_object_completed = true;
         }
 
-        if (m_buffer_remaining > sizeof(header_type))
+        if (m_buffer_reader->remaining_size() > sizeof(header_type))
         {
-            read_header(m_buffer, m_buffer_remaining);
+            read_header();
             return;
         }
 
-        m_buffer = nullptr;
-        m_buffer_remaining = 0;
+        m_buffer_reader = nullptr;
     }
 
     /// @return true if the final part of an object was written
@@ -101,20 +98,12 @@ public:
 
 private:
 
-    void read_header(const uint8_t* data, header_type size)
+    void read_header()
     {
-        assert(data != nullptr && "Null pointer provided");
-        assert(size > sizeof(header_type) && "Buffer smaller than header");
-
-        auto reader = endian::stream_reader<endian::big_endian>(data, size);
-
-        auto header_data = reader.read<header_type>();
+        auto header_data = m_buffer_reader->read<header_type>();
         auto header = header_reader(header_data);
         auto start = header.template field<0>().template as<bool>();
         auto remaining = header.template field<1>().template as<header_type>();
-
-        m_buffer = data + header_size;
-        m_buffer_remaining = size - header_size;
 
         // Start of new object
         if (start == true)
@@ -131,23 +120,22 @@ private:
         }
 
         // Read next header if inside the current buffer
-        if ((m_buffer_remaining > remaining) &&
-            ((m_buffer_remaining - remaining) > sizeof(header_type)))
+        if (m_buffer_reader->remaining_size() > remaining + sizeof(header_type))
         {
-            read_header(m_buffer + remaining, m_buffer_remaining - remaining);
+            m_buffer_reader->skip(remaining);
+
+            read_header();
             return;
         }
 
         // Any remaining data do not contain a header to be read
-        m_buffer = nullptr;
-        m_buffer_remaining = 0;
+        m_buffer_reader = nullptr;
     }
 
 private:
 
-    const uint8_t* m_buffer = nullptr;
-
-    uint32_t m_buffer_remaining = 0;
+    std::unique_ptr<endian::stream_reader<endian::big_endian>> m_buffer_reader =
+        nullptr;
 
     header_type m_object_size = 0;
 
