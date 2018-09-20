@@ -7,6 +7,9 @@ every change, see the Git log.
 Latest
 ------
 * tbd
+
+8.1.0
+-----
 * Minor: Added examples for serializing into zeropadded buffers and to
   concatenate serialized data into buffers.
 * Patch: Improved safety of deserializer.
