@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         // until the object have been processed, write buffers
         while (!serializer.object_proccessed())
         {
-            // the size of the current buffer before appending aditional data
+            // the size of the current buffer before appending additional data
             auto old_size = buffer.size();
 
             auto buffer_size = std::min<uint32_t>(
