@@ -1,4 +1,4 @@
-language: cpp
+language: bash
 matrix:
   include:
     - name: Linux Ubuntu 16 - g++ 5
