@@ -28,4 +28,5 @@ matrix:
 install:
   - python waf configure
 script:
-  - python waf build -v --run_tests
+  - python waf build -v
+  - python waf --run_tests
