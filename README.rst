@@ -2,8 +2,8 @@
 chunkie
 =======
 
-Quick Overview
---------------
+.. image:: https://travis-ci.org/steinwurf/chunkie.svg?branch=master
+    :target: https://travis-ci.org/steinwurf/chunkie
 
 Chunkie provides functionality for serializing an object into a stream and
 deserializing a stream back into an object. This can be useful when sending big
