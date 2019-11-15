@@ -67,7 +67,7 @@ public:
         m_object_completed = false;
 
         auto bytes = std::min<header_type>(
-            m_buffer_reader->remaining_size(), m_object_remaining);
+            (header_type)m_buffer_reader->remaining_size(), m_object_remaining);
 
         auto offset = m_object_size - m_object_remaining;
         m_buffer_reader->read(object + offset, bytes);
