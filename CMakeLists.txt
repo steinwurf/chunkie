@@ -22,6 +22,3 @@ target_link_libraries(chunkie
 target_include_directories(chunkie INTERFACE src)
 
 target_compile_features(chunkie INTERFACE cxx_std_14)
-
-add_executable(serialize_deserialize_concatenated_buffers ./examples/serialize_deserialize_concatenated_buffers.cpp)
-target_link_libraries(serialize_deserialize_concatenated_buffers steinwurf::chunkie)
