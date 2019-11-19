@@ -12,8 +12,13 @@ endif()
 add_library(chunkie INTERFACE)
 add_library(steinwurf::chunkie ALIAS chunkie)
 
+if (NOT TARGET bitter)
 add_subdirectory("${STEINWURF_RESOLVE}/bitter" bitter)
+endif()
+
+if (NOT TARGET endian)
 add_subdirectory("${STEINWURF_RESOLVE}/endian" endian)
+endif()
 
 target_link_libraries(chunkie
     INTERFACE steinwurf::endian
