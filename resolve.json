@@ -10,14 +10,14 @@
         "name": "endian",
         "resolver": "git",
         "method": "semver",
-        "major": 10,
+        "major": 11,
         "sources": ["github.com/steinwurf/endian.git"]
     },
     {
         "name": "bitter",
         "resolver": "git",
         "method": "semver",
-        "major": 5,
+        "major": 6,
         "sources": ["github.com/steinwurf/bitter.git"]
     },
     {
