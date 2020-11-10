@@ -6,6 +6,10 @@ every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+10.0.0
+------
 * Major: Upgrade bitter and endian to new major versions.
 
 9.1.1
