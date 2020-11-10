@@ -6,7 +6,6 @@ import sys
 import json
 import shutil
 import subprocess
-from datetime import datetime
 
 project_name = 'chunkie'
 
