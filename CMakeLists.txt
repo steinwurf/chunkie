@@ -9,6 +9,8 @@ if(NOT DEFINED STEINWURF_RESOLVE)
     set(STEINWURF_RESOLVE "${CMAKE_CURRENT_SOURCE_DIR}/resolve_symlinks")
 endif()
 
+file(GLOB chunkie_headers ./src/chunkie/*.hpp)
+
 add_library(chunkie INTERFACE)
 add_library(steinwurf::chunkie ALIAS chunkie)
 
@@ -27,3 +29,5 @@ target_link_libraries(chunkie
 target_include_directories(chunkie INTERFACE src)
 
 target_compile_features(chunkie INTERFACE cxx_std_14)
+
+install(FILES ${chunkie_headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/chunkie)
