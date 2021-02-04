@@ -1,31 +1,31 @@
 [
-    {
-        "name": "waf-tools",
-        "resolver": "git",
-        "method": "semver",
-        "major": 4,
-        "sources": ["github.com/steinwurf/waf-tools.git"]
-    },
-    {
-        "name": "endian",
-        "resolver": "git",
-        "method": "semver",
-        "major": 11,
-        "sources": ["github.com/steinwurf/endian.git"]
-    },
-    {
-        "name": "bitter",
-        "resolver": "git",
-        "method": "semver",
-        "major": 6,
-        "sources": ["github.com/steinwurf/bitter.git"]
-    },
-    {
-        "name": "gtest",
-        "internal": true,
-        "resolver": "git",
-        "method": "semver",
-        "major": 4,
-        "sources": ["github.com/steinwurf/gtest.git"]
-    }
+  {
+    "name": "waf-tools",
+    "resolver": "git",
+    "method": "semver",
+    "major": 4,
+    "sources": ["github.com/steinwurf/waf-tools.git"]
+  },
+  {
+    "name": "endian",
+    "resolver": "git",
+    "method": "semver",
+    "major": 12,
+    "sources": ["github.com/steinwurf/endian.git"]
+  },
+  {
+    "name": "bitter",
+    "resolver": "git",
+    "method": "semver",
+    "major": 7,
+    "sources": ["github.com/steinwurf/bitter.git"]
+  },
+  {
+    "name": "gtest",
+    "internal": true,
+    "resolver": "git",
+    "method": "semver",
+    "major": 4,
+    "sources": ["github.com/steinwurf/gtest.git"]
+  }
 ]
