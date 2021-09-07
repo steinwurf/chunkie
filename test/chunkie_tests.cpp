@@ -8,9 +8,10 @@
 
 #include <gtest/gtest.h>
 
-GTEST_API_ int main(int argc, char **argv) {
-  srand(static_cast<uint32_t>(time(0)));
+GTEST_API_ int main(int argc, char** argv)
+{
+    srand(static_cast<uint32_t>(time(0)));
 
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
