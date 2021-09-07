@@ -22,10 +22,15 @@ namespace chunkie
 ///
 /// The length of these can be adjusted with the HeaderType template
 /// parameter, providing maximum objects lengths given the following:
+///
 /// HeaderType = uint8_t  -> object sizes must be smaller than 128 bytes
+///
 /// HeaderType = uint16_t -> object sizes must be smaller than 32768 bytes
+///
 /// HeaderType = uint32_t -> object sizes must be smaller than 2^31 bytes
+///
 /// HeaderType = uint64_t -> object sizes must be smaller than 2^63 bytes
+///
 /// A HeaderType of uint32_t is default and typically supports large enough
 /// objects. If objects a small a smaller header type can be used to reduce
 /// the added overhead.
